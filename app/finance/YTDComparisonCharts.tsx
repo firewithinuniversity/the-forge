@@ -245,7 +245,7 @@ export default function YTDComparisonCharts() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {/* Income Card */}
             <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-4">
               <p className="text-xs text-[#52525B] mb-1">YTD Income</p>

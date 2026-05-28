@@ -99,7 +99,7 @@ export default function TimelineClient({ projects }: { projects: TimelineProject
   const tasksWithDates = projects.flatMap((p) => p.tasks.filter((t) => t.startDate || t.endDate));
 
   return (
-    <div className="px-6 py-8 max-w-full mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-full mx-auto">
       <PageHeader
         title="Timeline"
         description="Project and task schedule overview"

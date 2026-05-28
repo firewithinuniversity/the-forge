@@ -254,7 +254,7 @@ export default function ProjectsListClient({ projects }: { projects: ProjectCard
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-7xl mx-auto">
       <PageHeader
         title="Projects"
         description={
@@ -642,7 +642,7 @@ export default function ProjectsListClient({ projects }: { projects: ProjectCard
         open={showNewFromTemplate}
         onClose={() => setShowNewFromTemplate(false)}
         title="New Project from Template"
-        maxWidth="max-w-2xl"
+        maxWidth="sm:max-w-2xl"
       >
         <form onSubmit={handleCreateFromTemplate} className="space-y-4">
           {/* Template Selection */}

@@ -133,7 +133,7 @@ export default function NotesClient({ notes, projects, transactions = [] }: { no
   }
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-5xl mx-auto">
       <PageHeader
         title="Notes"
         description={`${notes.length} notes across all projects`}
@@ -183,7 +183,7 @@ export default function NotesClient({ notes, projects, transactions = [] }: { no
       ) : (
         <div className="space-y-4">
           {filtered.map((note) => (
-            <div key={note.id} className={`rounded-xl bg-[#0F0F11] border p-5 hover:border-[#3F3F46] transition-colors ${note.pinned ? "border-[#E8501A]/30 bg-[#0F0F11]" : "border-[#27272A]"}`}>
+            <div key={note.id} className={`rounded-xl bg-[#0F0F11] border p-3 sm:p-5 [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#3F3F46] transition-colors ${note.pinned ? "border-[#E8501A]/30 bg-[#0F0F11]" : "border-[#27272A]"}`}>
               {editingId === note.id ? (
                 <div className="space-y-3">
                   <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClasses} placeholder="Note title (optional)" />

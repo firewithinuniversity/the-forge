@@ -155,7 +155,7 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
   }
 
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-6xl mx-auto">
       <PageHeader
         title="Tax Center"
         description={`${year} tax estimates and partner split for Fire Within University LLC`}
@@ -338,9 +338,9 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
       </div>
 
       {/* Tax Rates Settings Modal */}
-      <Modal open={showSettings} onClose={() => setShowSettings(false)} title="Tax Rate Settings" maxWidth="max-w-xl">
+      <Modal open={showSettings} onClose={() => setShowSettings(false)} title="Tax Rate Settings" maxWidth="sm:max-w-xl">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Partner 1 Name</label>
               <input className={inputClasses} value={settings.partner1Name} onChange={(e) => setSettings({ ...settings, partner1Name: e.target.value })} />
@@ -350,7 +350,7 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
               <input className={inputClasses} value={settings.partner2Name} onChange={(e) => setSettings({ ...settings, partner2Name: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Federal Tax Rate</label>
               <input type="number" step="0.01" className={inputClasses} value={settings.federalTaxRate} onChange={(e) => setSettings({ ...settings, federalTaxRate: parseFloat(e.target.value) || 0 })} />
@@ -360,7 +360,7 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
               <input type="number" step="0.001" className={inputClasses} value={settings.selfEmploymentRate} onChange={(e) => setSettings({ ...settings, selfEmploymentRate: parseFloat(e.target.value) || 0 })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">State Tax Rate</label>
               <input type="number" step="0.001" className={inputClasses} value={settings.stateTaxRate} onChange={(e) => setSettings({ ...settings, stateTaxRate: parseFloat(e.target.value) || 0 })} />
@@ -370,7 +370,7 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
               <input className={inputClasses} value={settings.stateName} onChange={(e) => setSettings({ ...settings, stateName: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Ownership Split</label>
               <input type="number" step="0.01" className={inputClasses} value={settings.ownershipSplit} onChange={(e) => setSettings({ ...settings, ownershipSplit: parseFloat(e.target.value) || 0 })} />
@@ -380,7 +380,7 @@ export default function TaxCenterClient({ config, year, totalIncome, totalExpens
               <input type="number" step="0.01" className={inputClasses} value={settings.qbiDeductionRate} onChange={(e) => setSettings({ ...settings, qbiDeductionRate: parseFloat(e.target.value) || 0 })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Tax Reserve Rate</label>
               <input type="number" step="0.01" className={inputClasses} value={settings.taxReserveRate} onChange={(e) => setSettings({ ...settings, taxReserveRate: parseFloat(e.target.value) || 0 })} />

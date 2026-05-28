@@ -225,8 +225,8 @@ export function IncomeByCategoryChart({
           <p className="text-xs text-[#52525B]">No income data available</p>
         </div>
       ) : (
-        <div className="h-[220px] flex items-center">
-          <div className="w-1/2 h-full">
+        <div className="h-auto sm:h-[220px] flex flex-col sm:flex-row items-center">
+          <div className="w-full sm:w-1/2 h-[180px] sm:h-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -257,7 +257,7 @@ export function IncomeByCategoryChart({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="w-1/2 space-y-2 overflow-y-auto max-h-[220px] pr-1">
+          <div className="w-full sm:w-1/2 space-y-2 overflow-y-auto max-h-[220px] pr-1 mt-2 sm:mt-0">
             {coloredData.map((entry, i) => {
               const pct =
                 total > 0 ? ((entry.amount / total) * 100).toFixed(1) : "0";

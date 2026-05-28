@@ -224,7 +224,7 @@ export default function DistributionsClient({ distributions, partner1Name, partn
   }
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-5xl mx-auto">
       <PageHeader
         title="Distributions"
         description="LLC member distributions — 50/50 split"
@@ -569,7 +569,7 @@ export default function DistributionsClient({ distributions, partner1Name, partn
         <form onSubmit={addDistribution} className="space-y-4">
           {errors.form && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">{errors.form}</div>}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Date <span className="text-red-400">*</span></label>
               <input type="date" className={`${inputClasses} ${errors.date ? "!border-red-500" : ""}`} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />

@@ -206,7 +206,7 @@ export default async function Home() {
   const deadlineColor = data.daysUntilDeadline < 15 ? "text-red-400" : data.daysUntilDeadline <= 30 ? "text-amber-400" : "text-green-400";
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>

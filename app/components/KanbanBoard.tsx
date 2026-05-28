@@ -40,11 +40,11 @@ export default function KanbanBoard({ projectId, tasks, phases, activePhaseId, o
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible sm:pb-0">
         {COLUMNS.map((col) => {
           const colTasks = tasksByStatus(col.status);
           return (
-            <div key={col.status} className={`rounded-xl bg-[#09090B] border border-[#27272A] border-t-2 ${col.border} min-h-[200px]`}>
+            <div key={col.status} className={`rounded-xl bg-[#09090B] border border-[#27272A] border-t-2 ${col.border} min-h-[200px] min-w-[260px] sm:min-w-0 shrink-0 sm:shrink`}>
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <div className={`h-2.5 w-2.5 rounded-full ${col.dot}`} />

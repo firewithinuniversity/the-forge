@@ -183,7 +183,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
   }
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-7xl mx-auto">
       <PageHeader
         title="Finance"
         description="Track income and expenses for Fire Within University"
@@ -212,7 +212,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
       />
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <KPICard label="Monthly Income" value={formatCurrencyShort(data.summary.monthlyIncome)} accent="text-[#22C55E]"
           valueColor={data.summary.monthlyIncome > 0 ? "text-[#22C55E]" : "text-[#52525B]"}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" /></svg>} />
@@ -276,8 +276,8 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
         {/* Transaction Table */}
         <div className="lg:col-span-3">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
+            <div className="relative w-full sm:w-auto">
               <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#52525B] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
@@ -286,15 +286,15 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search transactions..."
-                className={`${inputClasses} w-auto min-w-[200px] pl-8`}
+                className={`${inputClasses} w-full sm:w-auto sm:min-w-[200px] pl-8`}
               />
             </div>
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputClasses} w-auto`}>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`${inputClasses} w-[calc(50%-4px)] sm:w-auto`}>
               <option value="all">All Types</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
             </select>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClasses} w-auto`}>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputClasses} w-[calc(50%-4px)] sm:w-auto`}>
               <option value="all">All Categories</option>
               {uniqueCategories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -302,7 +302,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className={`${inputClasses} w-auto`}
+              className={`${inputClasses} w-[calc(50%-12px)] sm:w-auto`}
               title="From date"
             />
             <span className="text-xs text-[#52525B]">to</span>
@@ -310,13 +310,13 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className={`${inputClasses} w-auto`}
+              className={`${inputClasses} w-[calc(50%-12px)] sm:w-auto`}
               title="To date"
             />
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="rounded-lg border border-[#27272A] bg-[#09090B] px-3 py-2 text-xs text-[#A1A1AA] hover:text-[#E8501A] hover:border-[#E8501A]/30 transition-colors"
+                className="rounded-lg border border-[#27272A] bg-[#09090B] px-3 py-2 text-xs text-[#A1A1AA] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#E8501A] [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#E8501A]/30 transition-colors"
               >
                 Clear filters
               </button>
@@ -400,7 +400,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
               <span className="text-xs text-[#52525B]">
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
               </span>
@@ -666,7 +666,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Amount <span className="text-red-400">*</span></label>
             <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -688,7 +688,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
           {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Category <span className="text-red-400">*</span></label>
             <select value={category} onChange={(e) => setCategory(e.target.value)}
@@ -725,7 +725,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
 
         {/* Expense-specific fields */}
         {type === "expense" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Tax Deductible?</label>
               <select value={taxDeductible} onChange={(e) => setTaxDeductible(e.target.value)} className={inputClasses}>
@@ -870,7 +870,7 @@ function EditTransactionModal({ transaction, onClose, categories, projects, onSa
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Amount <span className="text-red-400">*</span></label>
             <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)}
@@ -892,7 +892,7 @@ function EditTransactionModal({ transaction, onClose, categories, projects, onSa
           {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Category <span className="text-red-400">*</span></label>
             <select value={category} onChange={(e) => setCategory(e.target.value)}
@@ -913,7 +913,7 @@ function EditTransactionModal({ transaction, onClose, categories, projects, onSa
 
         {/* Expense-specific fields */}
         {type === "expense" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Tax Deductible?</label>
               <select value={taxDeductible} onChange={(e) => setTaxDeductible(e.target.value)} className={inputClasses}>
@@ -949,16 +949,16 @@ function EditTransactionModal({ transaction, onClose, categories, projects, onSa
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={`${inputClasses} resize-none`} placeholder="Additional details..." />
         </div>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
           <button
             type="button"
             onClick={handleDelete}
             disabled={deleting || saving}
-            className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/20 hover:border-red-500/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-red-500/20 [@media(hover:hover)_and_(pointer:fine)]:hover:border-red-500/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {deleting ? "Deleting..." : "Delete"}
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-end">
             <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saving || deleting}>{saving ? "Saving..." : "Save Changes"}</Button>
           </div>

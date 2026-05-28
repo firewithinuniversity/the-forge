@@ -10,7 +10,7 @@ interface ModalProps {
   maxWidth?: string;
 }
 
-export default function Modal({ open, onClose, title, children, maxWidth = "max-w-lg" }: ModalProps) {
+export default function Modal({ open, onClose, title, children, maxWidth = "sm:max-w-lg" }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
@@ -51,7 +51,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
       style={{
         backgroundColor: visible ? "rgba(0, 0, 0, 0.6)" : "rgba(0, 0, 0, 0)",
         transition: "background-color 200ms cubic-bezier(0.23, 1, 0.32, 1)",
@@ -61,25 +61,25 @@ export default function Modal({ open, onClose, title, children, maxWidth = "max-
       }}
     >
       <div
-        className={`w-full ${maxWidth} max-h-[90vh] flex flex-col rounded-2xl bg-[#0F0F11] border border-[#27272A] shadow-2xl`}
+        className={`w-full ${maxWidth} max-h-[95vh] sm:max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-[#0F0F11] border border-[#27272A] shadow-2xl`}
         style={{
           opacity: visible ? 1 : 0,
-          transform: visible ? "scale(1)" : "scale(0.95)",
+          transform: visible ? "translateY(0)" : "translateY(12px)",
           transition: "opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 200ms cubic-bezier(0.23, 1, 0.32, 1)",
         }}
       >
-        <div className="flex items-center justify-between border-b border-[#27272A] px-6 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-[#27272A] px-4 sm:px-6 py-4 shrink-0">
           <h2 className="text-lg font-semibold text-[#FAFAFA]">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-[#52525B] hover:text-[#FAFAFA] hover:bg-[#1A1A1E] transition-[color,background-color]"
+            className="rounded-lg p-1 text-[#52525B] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#FAFAFA] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#1A1A1E] transition-[color,background-color]"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div className="px-6 py-5 overflow-y-auto">{children}</div>
+        <div className="px-4 sm:px-6 py-5 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

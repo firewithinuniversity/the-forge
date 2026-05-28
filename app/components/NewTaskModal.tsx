@@ -100,7 +100,7 @@ export default function NewTaskModal({ projectId, phases, initialStatus = "todo"
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={`${inputClasses} resize-none`} placeholder="Add details..." />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputClasses}>
@@ -121,7 +121,7 @@ export default function NewTaskModal({ projectId, phases, initialStatus = "todo"
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Assignee</label>
             <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className={inputClasses}>
@@ -136,7 +136,7 @@ export default function NewTaskModal({ projectId, phases, initialStatus = "todo"
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Start Date</label>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClasses} />

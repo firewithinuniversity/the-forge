@@ -173,7 +173,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-7xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs text-[#52525B] mb-6">
         <Link href="/projects" className="hover:text-[#A1A1AA] transition-colors">Projects</Link>
@@ -184,7 +184,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
       </div>
 
       {/* Project Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="mt-1.5 h-4 w-4 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
           <div className="flex-1 min-w-0">
@@ -216,7 +216,7 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={progress === 100 ? "success" : "default"}>{progress}% complete</Badge>
           {project.archived ? (
             <>
@@ -479,17 +479,17 @@ function TaskListView({ tasks, activePhaseId }: { tasks: TaskData[]; activePhase
   ];
 
   return (
-    <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] overflow-hidden">
-      <div className="flex items-center px-4 py-3 border-b border-[#27272A]">
+    <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] overflow-hidden overflow-x-auto">
+      <div className="flex items-center px-4 py-3 border-b border-[#27272A] min-w-[600px]">
         {headers.map((h) => (
           <button key={h.key} onClick={() => setSortKey(h.key)}
             className={`${h.width} text-left text-[11px] uppercase tracking-wider font-medium transition-colors ${
-              sortKey === h.key ? "text-[#E8501A]" : "text-[#52525B] hover:text-[#A1A1AA]"
+              sortKey === h.key ? "text-[#E8501A]" : "text-[#52525B] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#A1A1AA]"
             }`}>{h.label}</button>
         ))}
       </div>
       {sorted.map((task) => (
-        <div key={task.id} className="flex items-center px-4 py-3 hover:bg-[#1A1A1E] transition-colors border-b border-[#27272A] last:border-b-0">
+        <div key={task.id} className="flex items-center px-4 py-3 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#1A1A1E] transition-colors border-b border-[#27272A] last:border-b-0 min-w-[600px]">
           <div className="flex-1 min-w-0">
             <p className="text-sm text-[#FAFAFA] truncate">{task.title}</p>
           </div>

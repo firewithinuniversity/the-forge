@@ -148,7 +148,7 @@ export default function TaxSummaryClient({ initialData }: Props) {
   const { config, income, expenses, netProfit, partner1, partner2, payments, distributions } = data;
 
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-6xl mx-auto">
       {/* Print-friendly styles */}
       <style>{`
         @media print {

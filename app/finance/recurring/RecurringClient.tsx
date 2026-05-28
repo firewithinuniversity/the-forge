@@ -195,7 +195,7 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
   }
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto">
+    <div className="px-3 sm:px-6 py-4 sm:py-8 max-w-5xl mx-auto">
       <PageHeader
         title="Recurring Expenses"
         description="Monthly subscriptions and fixed costs for Fire Within University"
@@ -239,7 +239,7 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
       )}
 
       {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-4">
           <p className="text-xs text-[#52525B]">Active Services</p>
           <p className="text-2xl font-bold text-[#FAFAFA]">{activeExpenses.length}</p>
@@ -383,7 +383,7 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
             <input className={`${inputClasses} ${errors.service ? "!border-red-500" : ""}`} value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} placeholder="e.g., Vercel Pro" autoFocus />
             {errors.service && <p className="text-xs text-red-400 mt-1">{errors.service}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Category <span className="text-red-400">*</span></label>
               <select className={`${inputClasses} ${errors.category ? "!border-red-500" : ""}`} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
@@ -401,7 +401,7 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-[#52525B] mb-1">Monthly Cost</label>
               <input type="number" step="0.01" min="0" className={`${inputClasses} ${errors.monthlyCost ? "!border-red-500" : ""}`} value={form.monthlyCost} onChange={(e) => setForm({ ...form, monthlyCost: e.target.value })} placeholder="0.00" />
