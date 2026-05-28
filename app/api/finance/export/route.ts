@@ -52,6 +52,8 @@ export async function GET(request: Request) {
       Category: t.category,
       Project: t.project?.name || "",
       Amount: t.type === "income" ? t.amount : -t.amount,
+      "Tax Deductible": t.taxDeductible === "yes" ? "Yes" : t.taxDeductible === "partial" ? "Partial" : t.taxDeductible === "no" ? "No" : "",
+      "Receipt Saved": t.receiptSaved ? "Yes" : "No",
       Notes: t.notes || "",
     }));
 
@@ -59,10 +61,10 @@ export async function GET(request: Request) {
     const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
     txRows.push(
-      { Date: "", Type: "", Description: "", Category: "", Project: "", Amount: 0, Notes: "" },
-      { Date: "", Type: "", Description: "TOTAL INCOME", Category: "", Project: "", Amount: fmt$(totalIncome), Notes: "" },
-      { Date: "", Type: "", Description: "TOTAL EXPENSES", Category: "", Project: "", Amount: fmt$(-totalExpenses), Notes: "" },
-      { Date: "", Type: "", Description: "NET PROFIT", Category: "", Project: "", Amount: fmt$(totalIncome - totalExpenses), Notes: "" },
+      { Date: "", Type: "", Description: "", Category: "", Project: "", Amount: 0, "Tax Deductible": "", "Receipt Saved": "", Notes: "" },
+      { Date: "", Type: "", Description: "TOTAL INCOME", Category: "", Project: "", Amount: fmt$(totalIncome), "Tax Deductible": "", "Receipt Saved": "", Notes: "" },
+      { Date: "", Type: "", Description: "TOTAL EXPENSES", Category: "", Project: "", Amount: fmt$(-totalExpenses), "Tax Deductible": "", "Receipt Saved": "", Notes: "" },
+      { Date: "", Type: "", Description: "NET PROFIT", Category: "", Project: "", Amount: fmt$(totalIncome - totalExpenses), "Tax Deductible": "", "Receipt Saved": "", Notes: "" },
     );
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(txRows), "All Transactions");
 
@@ -120,15 +122,15 @@ export async function GET(request: Request) {
 
     if (mode === "full") {
       // ─── Sheet 5: Quarterly Tax Estimates ──────────────────────────
-      const netProfit = totalIncome - totalExpenses;
+      const netProfit = fmt$(totalIncome - totalExpenses);
       const split = config.ownershipSplit ?? 0.5;
-      const yourShare = netProfit * split;
-      const qbiDeduction = yourShare * (config.qbiDeductionRate ?? 0.2);
-      const seTax = yourShare * (config.selfEmploymentRate ?? 0.153);
-      const seDeductionAmt = seTax * (config.seDeduction ?? 0.5);
-      const taxableIncome = yourShare - qbiDeduction - seDeductionAmt;
-      const federalTax = taxableIncome * (config.federalTaxRate ?? 0.12);
-      const stateTax = taxableIncome * (config.stateTaxRate ?? 0.0465);
+      const yourShare = fmt$(netProfit * split);
+      const qbiDeduction = fmt$(yourShare * (config.qbiDeductionRate ?? 0.2));
+      const seTax = fmt$(yourShare * (config.selfEmploymentRate ?? 0.153));
+      const seDeductionAmt = fmt$(seTax * (config.seDeduction ?? 0.5));
+      const taxableIncome = fmt$(yourShare - qbiDeduction - seDeductionAmt);
+      const federalTax = fmt$(taxableIncome * (config.federalTaxRate ?? 0.12));
+      const stateTax = fmt$(taxableIncome * (config.stateTaxRate ?? 0.0465));
 
       const quarterPeriods = ["Jan – Mar", "Apr – Jun", "Jul – Sep", "Oct – Dec"];
       const quarterDueDates = ["April 15", "June 15", "September 15", "January 15 (next year)"];
@@ -249,7 +251,12 @@ export async function GET(request: Request) {
       : `FWU-Finance-Export-${today}`;
 
     if (format === "csv") {
-      const csv = XLSX.utils.sheet_to_csv(wb.Sheets["All Transactions"]);
+      const csvSections: string[] = [];
+      for (const sheetName of wb.SheetNames) {
+        csvSections.push(`=== ${sheetName.toUpperCase()} ===`);
+        csvSections.push(XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]));
+      }
+      const csv = csvSections.join("\n\n");
       return new NextResponse(csv, {
         headers: {
           "Content-Type": "text/csv",

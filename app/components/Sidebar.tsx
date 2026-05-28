@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import NotificationBell from "./NotificationBell";
 
@@ -111,7 +111,17 @@ const navSections = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Hide sidebar on login page
+  if (pathname === "/login") return null;
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -165,7 +175,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Notifications */}
-      <div className="border-t border-[#27272A] px-5 py-3">
+      <div className="border-t border-[#27272A] px-5 py-3 overflow-visible relative">
         <NotificationBell />
       </div>
 
@@ -179,6 +189,15 @@ export default function Sidebar() {
             J
           </div>
           <span className="ml-2 text-xs text-[#52525B]">Brett & Jude</span>
+          <button
+            onClick={handleLogout}
+            className="ml-auto text-[#52525B] transition-colors [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#A1A1AA]"
+            title="Log out"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>

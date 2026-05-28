@@ -10,10 +10,15 @@ import {
 } from "@/lib/validate";
 
 export async function GET() {
-  const distributions = await prisma.distribution.findMany({
-    orderBy: { date: "desc" },
-  });
-  return NextResponse.json(distributions);
+  try {
+    const distributions = await prisma.distribution.findMany({
+      orderBy: { date: "desc" },
+    });
+    return NextResponse.json(distributions);
+  } catch (error) {
+    console.error("GET /api/distributions error:", error);
+    return NextResponse.json({ error: "Failed to fetch distributions" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

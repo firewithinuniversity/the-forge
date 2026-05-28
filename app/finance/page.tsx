@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import FinanceClient from "./FinanceClient";
 
+function roundCents(n: number): number { return Math.round(n * 100) / 100; }
+
 export const revalidate = 300;
 
 async function getFinanceData() {
@@ -13,6 +15,7 @@ async function getFinanceData() {
   const [transactions, categories, projects, monthlyTx, yearlyTx, chartTx] = await Promise.all([
     prisma.transaction.findMany({
       orderBy: { date: "desc" },
+      take: 200,
       include: { project: { select: { id: true, name: true, color: true } } },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
@@ -24,9 +27,13 @@ async function getFinanceData() {
 
   let monthlyIncome = 0, monthlyExpenses = 0;
   for (const t of monthlyTx) { if (t.type === "income") monthlyIncome += t.amount; else monthlyExpenses += t.amount; }
+  monthlyIncome = roundCents(monthlyIncome);
+  monthlyExpenses = roundCents(monthlyExpenses);
 
   let ytdIncome = 0, ytdExpenses = 0;
   for (const t of yearlyTx) { if (t.type === "income") ytdIncome += t.amount; else ytdExpenses += t.amount; }
+  ytdIncome = roundCents(ytdIncome);
+  ytdExpenses = roundCents(ytdExpenses);
 
   const monthlyChart: { month: string; income: number; expenses: number }[] = [];
   for (let i = 11; i >= 0; i--) {
@@ -39,7 +46,7 @@ async function getFinanceData() {
       const tk = `${td.getFullYear()}-${String(td.getMonth() + 1).padStart(2, "0")}`;
       if (tk === key) { if (t.type === "income") inc += t.amount; else exp += t.amount; }
     }
-    monthlyChart.push({ month: label, income: inc, expenses: exp });
+    monthlyChart.push({ month: label, income: roundCents(inc), expenses: roundCents(exp) });
   }
 
   const catBreakdown: Record<string, number> = {};
@@ -69,8 +76,8 @@ async function getFinanceData() {
     summary: {
       monthlyIncome,
       monthlyExpenses,
-      monthlyNet: monthlyIncome - monthlyExpenses,
-      ytdNet: ytdIncome - ytdExpenses,
+      monthlyNet: roundCents(monthlyIncome - monthlyExpenses),
+      ytdNet: roundCents(ytdIncome - ytdExpenses),
     },
     monthlyChart,
     categoryBreakdown: Object.entries(catBreakdown).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),

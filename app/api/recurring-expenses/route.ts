@@ -12,14 +12,19 @@ import {
 } from "@/lib/validate";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const activeOnly = searchParams.get("active") !== "false";
+  try {
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("active") !== "false";
 
-  const expenses = await prisma.recurringExpense.findMany({
-    where: activeOnly ? { active: true } : undefined,
-    orderBy: { service: "asc" },
-  });
-  return NextResponse.json(expenses);
+    const expenses = await prisma.recurringExpense.findMany({
+      where: activeOnly ? { active: true } : undefined,
+      orderBy: { service: "asc" },
+    });
+    return NextResponse.json(expenses);
+  } catch (error) {
+    console.error("GET /api/recurring-expenses error:", error);
+    return NextResponse.json({ error: "Failed to fetch recurring expenses" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export interface CalendarEvent {
-  type: "task" | "phase_start" | "phase_end" | "tax" | "recurring" | "distribution";
+  type: "task" | "phase_start" | "phase_end" | "tax" | "recurring" | "distribution" | "meeting" | "note" | "deadline" | "other";
   title: string;
   date: string;
+  endDate?: string | null;
+  allDay?: boolean;
   color?: string;
   projectId?: string;
   status?: string;
   paid?: boolean;
+  calendarEventId?: string; // DB id for custom events (editable)
+  description?: string | null;
 }
 
 // GET /api/calendar?month=MM&year=YYYY
@@ -140,6 +144,28 @@ export async function getCalendarEvents(month: number, year: number): Promise<Ca
       type: "distribution",
       title: `${dist.type} distribution`,
       date: dist.date.toISOString(),
+    });
+  }
+
+  // 6. Custom calendar events (meetings, notes, deadlines, etc.)
+  const calendarEvents = await prisma.calendarEvent.findMany({
+    where: {
+      date: { gte: rangeStart, lte: rangeEnd },
+    },
+    include: { project: { select: { color: true } } },
+  });
+
+  for (const ce of calendarEvents) {
+    events.push({
+      type: ce.type as CalendarEvent["type"],
+      title: ce.title,
+      date: ce.date.toISOString(),
+      endDate: ce.endDate?.toISOString() ?? null,
+      allDay: ce.allDay,
+      color: ce.color || ce.project?.color || "#E8501A",
+      projectId: ce.projectId ?? undefined,
+      calendarEventId: ce.id,
+      description: ce.description,
     });
   }
 

@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  ValidationError,
+  requireString,
+  optionalString,
+  optionalDate,
+  optionalNumber,
+  validateEnum,
+  maxLength,
+} from "@/lib/validate";
 
 const VALID_STATUSES = ["todo", "in_progress", "review", "done"];
 const VALID_PRIORITIES = ["low", "medium", "high", "urgent"];
@@ -12,33 +21,41 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, description, status, priority, order, phaseId, assignee, dueDate, startDate, endDate } = body;
-
-    if (status && !VALID_STATUSES.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    if (priority && !VALID_PRIORITIES.includes(priority)) {
-      return NextResponse.json(
-        { error: `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}` },
-        { status: 400 }
-      );
-    }
 
     const data: Record<string, unknown> = {};
-    if (title !== undefined) data.title = title.trim();
-    if (description !== undefined) data.description = description?.trim() || null;
-    if (status !== undefined) data.status = status;
-    if (priority !== undefined) data.priority = priority;
-    if (order !== undefined) data.order = order;
-    if (phaseId !== undefined) data.phaseId = phaseId || null;
-    if (assignee !== undefined) data.assignee = assignee || null;
-    if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
-    if (startDate !== undefined) data.startDate = startDate ? new Date(startDate) : null;
-    if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
+
+    if (body.title !== undefined) {
+      data.title = maxLength(requireString(body.title, "title"), 200, "title");
+    }
+    if (body.description !== undefined) {
+      const desc = optionalString(body.description, "description");
+      data.description = desc ? maxLength(desc, 5000, "description") : null;
+    }
+    if (body.status !== undefined) {
+      data.status = validateEnum(body.status, VALID_STATUSES, "status");
+    }
+    if (body.priority !== undefined) {
+      data.priority = validateEnum(body.priority, VALID_PRIORITIES, "priority");
+    }
+    if (body.order !== undefined) {
+      data.order = optionalNumber(body.order, "order", { min: 0, allowZero: true });
+    }
+    if (body.phaseId !== undefined) {
+      data.phaseId = optionalString(body.phaseId, "phaseId") || null;
+    }
+    if (body.assignee !== undefined) {
+      const assignee = optionalString(body.assignee, "assignee");
+      data.assignee = assignee ? maxLength(assignee, 100, "assignee") : null;
+    }
+    if (body.dueDate !== undefined) {
+      data.dueDate = body.dueDate === null ? null : optionalDate(body.dueDate, "dueDate") ?? null;
+    }
+    if (body.startDate !== undefined) {
+      data.startDate = body.startDate === null ? null : optionalDate(body.startDate, "startDate") ?? null;
+    }
+    if (body.endDate !== undefined) {
+      data.endDate = body.endDate === null ? null : optionalDate(body.endDate, "endDate") ?? null;
+    }
 
     const task = await prisma.task.update({
       where: { id },
@@ -47,6 +64,9 @@ export async function PATCH(
 
     return NextResponse.json(task);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("PATCH /api/tasks/[id] error:", error);
     return NextResponse.json(
       { error: "Failed to update task" },

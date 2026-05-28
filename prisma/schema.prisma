@@ -17,10 +17,11 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  phases       Phase[]
-  tasks        Task[]
-  notes        Note[]
-  transactions Transaction[]
+  phases         Phase[]
+  tasks          Task[]
+  notes          Note[]
+  transactions   Transaction[]
+  calendarEvents CalendarEvent[]
 }
 
 // ── Phases (milestones within a project) ────────────────────────────────────
@@ -219,6 +220,41 @@ model ProjectTemplate {
   tasks       String   @default("[]") // JSON: [{title, description, priority, phaseName}]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ── Calendar Events (meetings, notes, custom events) ───────────────────────
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   @default("meeting") // "meeting" | "note" | "deadline" | "other"
+  date        DateTime
+  endDate     DateTime?
+  allDay      Boolean  @default(false)
+  color       String   @default("#E8501A")
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+}
+
+// ── Reminders ──────────────────────────────────────────────────────────────
+model Reminder {
+  id         String   @id @default(cuid())
+  title      String
+  message    String   @default("")
+  remindAt   DateTime
+  entityType String?  // "task" | "phase" | "project" | "tax" | "recurring" | null (general)
+  entityId   String?
+  link       String?  // Deep-link path
+  fired      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([fired, remindAt])
+  @@index([createdAt])
 }
 
 // ── Audit Trail ────────────────────────────────────────────────────────────

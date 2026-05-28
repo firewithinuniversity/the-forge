@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ValidationError } from "@/lib/validate";
 
 interface TemplatePhase {
   name: string;
@@ -46,6 +47,12 @@ export async function POST(
       overrides.description !== undefined
         ? overrides.description?.trim() || null
         : template.description;
+
+    // Validate hex color if provided
+    const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
+    if (overrides.color && !HEX_COLOR_RE.test(overrides.color)) {
+      throw new ValidationError("color must be a valid hex color (e.g. #FF00AA)");
+    }
     const projectColor = overrides.color || template.color;
 
     // Create the project
@@ -57,9 +64,37 @@ export async function POST(
       },
     });
 
-    // Parse template data
-    const templatePhases = JSON.parse(template.phases) as TemplatePhase[];
-    const templateTasks = JSON.parse(template.tasks) as TemplateTask[];
+    // Parse template data with validation
+    let templatePhases: TemplatePhase[];
+    let templateTasks: TemplateTask[];
+    try {
+      const parsedPhases = JSON.parse(template.phases);
+      const parsedTasks = JSON.parse(template.tasks);
+
+      if (!Array.isArray(parsedPhases)) {
+        throw new ValidationError("Template phases must be an array");
+      }
+      if (!Array.isArray(parsedTasks)) {
+        throw new ValidationError("Template tasks must be an array");
+      }
+
+      for (let i = 0; i < parsedPhases.length; i++) {
+        if (typeof parsedPhases[i]?.name !== "string" || !parsedPhases[i].name.trim()) {
+          throw new ValidationError(`Template phase at index ${i} must have a non-empty name`);
+        }
+      }
+      for (let i = 0; i < parsedTasks.length; i++) {
+        if (typeof parsedTasks[i]?.title !== "string" || !parsedTasks[i].title.trim()) {
+          throw new ValidationError(`Template task at index ${i} must have a non-empty title`);
+        }
+      }
+
+      templatePhases = parsedPhases as TemplatePhase[];
+      templateTasks = parsedTasks as TemplateTask[];
+    } catch (e) {
+      if (e instanceof ValidationError) throw e;
+      throw new ValidationError("Template contains malformed JSON for phases or tasks");
+    }
 
     // Create phases and build a name->id map
     const phaseNameToId: Record<string, string> = {};
@@ -103,6 +138,9 @@ export async function POST(
 
     return NextResponse.json(fullProject, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/project-templates/[id]/instantiate error:", error);
     return NextResponse.json(
       { error: "Failed to create project from template" },

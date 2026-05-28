@@ -13,6 +13,11 @@ const mockPrisma = vi.hoisted(() => ({
   taxPayment: { findMany: vi.fn() },
   recurringExpense: { findMany: vi.fn() },
   distribution: { findMany: vi.fn() },
+  notification: { findMany: vi.fn() },
+  reminder: { findMany: vi.fn() },
+  projectTemplate: { findMany: vi.fn() },
+  auditLog: { findMany: vi.fn() },
+  calendarEvent: { findMany: vi.fn() },
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -37,6 +42,11 @@ describe("GET /api/export-all", () => {
     mockPrisma.taxPayment.findMany.mockResolvedValue([]);
     mockPrisma.recurringExpense.findMany.mockResolvedValue([]);
     mockPrisma.distribution.findMany.mockResolvedValue([]);
+    mockPrisma.notification.findMany.mockResolvedValue([]);
+    mockPrisma.reminder.findMany.mockResolvedValue([]);
+    mockPrisma.projectTemplate.findMany.mockResolvedValue([]);
+    mockPrisma.auditLog.findMany.mockResolvedValue([]);
+    mockPrisma.calendarEvent.findMany.mockResolvedValue([]);
   });
 
   it("returns a JSON response with Content-Type header", async () => {
@@ -57,7 +67,7 @@ describe("GET /api/export-all", () => {
     const body = await response.json();
 
     expect(body).toHaveProperty("exportedAt");
-    expect(body).toHaveProperty("version", "1.0");
+    expect(body).toHaveProperty("version", "2.1");
     expect(body).toHaveProperty("data");
     expect(body).toHaveProperty("summary");
   });
@@ -77,6 +87,11 @@ describe("GET /api/export-all", () => {
       taxPayments: 0,
       recurringExpenses: 0,
       distributions: 0,
+      notifications: 0,
+      reminders: 0,
+      projectTemplates: 0,
+      auditLogs: 0,
+      calendarEvents: 0,
     });
   });
 

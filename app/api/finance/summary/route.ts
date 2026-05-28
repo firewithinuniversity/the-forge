@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function roundCents(n: number): number { return Math.round(n * 100) / 100; }
+
 export async function GET() {
   try {
     const now = new Date();
@@ -11,7 +13,7 @@ export async function GET() {
     const [monthlyTransactions, yearlyTransactions, last12Months] = await Promise.all([
       prisma.transaction.findMany({
         where: { date: { gte: startOfMonth, lte: endOfMonth } },
-        select: { type: true, amount: true },
+        select: { type: true, amount: true, category: true },
       }),
       prisma.transaction.findMany({
         where: { date: { gte: startOfYear } },
@@ -28,12 +30,16 @@ export async function GET() {
       if (t.type === "income") monthlyIncome += t.amount;
       else monthlyExpenses += t.amount;
     }
+    monthlyIncome = roundCents(monthlyIncome);
+    monthlyExpenses = roundCents(monthlyExpenses);
 
     let ytdIncome = 0, ytdExpenses = 0;
     for (const t of yearlyTransactions) {
       if (t.type === "income") ytdIncome += t.amount;
       else ytdExpenses += t.amount;
     }
+    ytdIncome = roundCents(ytdIncome);
+    ytdExpenses = roundCents(ytdExpenses);
 
     // Monthly chart data (last 12 months)
     const monthlyChart: { month: string; income: number; expenses: number }[] = [];
@@ -50,26 +56,12 @@ export async function GET() {
           else expenses += t.amount;
         }
       }
-      monthlyChart.push({ month: label, income, expenses });
+      monthlyChart.push({ month: label, income: roundCents(income), expenses: roundCents(expenses) });
     }
 
-    // Category breakdown
-    const categoryBreakdown: Record<string, { category: string; amount: number; type: string }> = {};
-    for (const t of monthlyTransactions as { type: string; amount: number; category?: string }[]) {
-      const cat = (t as { category?: string }).category || "Other";
-      // Need to get category from the full transactions
-      if (!categoryBreakdown[cat]) categoryBreakdown[cat] = { category: cat, amount: 0, type: t.type };
-      categoryBreakdown[cat].amount += t.amount;
-    }
-
-    // Re-fetch monthly with category for breakdown
-    const monthlyWithCategory = await prisma.transaction.findMany({
-      where: { date: { gte: startOfMonth, lte: endOfMonth } },
-      select: { type: true, amount: true, category: true },
-    });
-
+    // Category breakdown (uses monthlyTransactions which now includes category)
     const catBreakdown: Record<string, number> = {};
-    for (const t of monthlyWithCategory) {
+    for (const t of monthlyTransactions) {
       if (t.type === "expense") {
         catBreakdown[t.category] = (catBreakdown[t.category] || 0) + t.amount;
       }
@@ -78,8 +70,8 @@ export async function GET() {
     return NextResponse.json({
       monthlyIncome,
       monthlyExpenses,
-      monthlyNet: monthlyIncome - monthlyExpenses,
-      ytdNet: ytdIncome - ytdExpenses,
+      monthlyNet: roundCents(monthlyIncome - monthlyExpenses),
+      ytdNet: roundCents(ytdIncome - ytdExpenses),
       monthlyChart,
       categoryBreakdown: Object.entries(catBreakdown)
         .map(([category, amount]) => ({ category, amount }))

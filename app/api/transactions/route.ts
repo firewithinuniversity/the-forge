@@ -70,6 +70,39 @@ export async function POST(request: Request) {
     ) ?? "unknown";
     // ── End validation ──────────────────────────────────────────────────
 
+    // ── Duplicate detection ────────────────────────────────────────────
+    const skipDuplicateCheck = optionalBoolean(body.skipDuplicateCheck, "skipDuplicateCheck") ?? false;
+
+    if (!skipDuplicateCheck) {
+      const dupCheckStart = new Date(date);
+      dupCheckStart.setDate(dupCheckStart.getDate() - 1);
+      const dupCheckEnd = new Date(date);
+      dupCheckEnd.setDate(dupCheckEnd.getDate() + 1);
+
+      const possibleDupes = await prisma.transaction.findMany({
+        where: {
+          type,
+          amount,
+          category,
+          date: { gte: dupCheckStart, lte: dupCheckEnd },
+        },
+        select: { id: true, description: true, date: true },
+        take: 3,
+      });
+
+      if (possibleDupes.length > 0) {
+        return NextResponse.json(
+          {
+            error: "duplicate_warning",
+            message: "A similar transaction already exists",
+            duplicates: possibleDupes,
+          },
+          { status: 409 }
+        );
+      }
+    }
+    // ── End duplicate detection ────────────────────────────────────────
+
     const transaction = await prisma.transaction.create({
       data: {
         type,

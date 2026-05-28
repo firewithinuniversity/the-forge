@@ -42,7 +42,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  await prisma.taxPayment.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  try {
+    const { id } = await params;
+    await prisma.taxPayment.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("DELETE /api/tax-payments/[id] error:", error);
+    return NextResponse.json({ error: "Failed to delete tax payment" }, { status: 500 });
+  }
 }

@@ -11,14 +11,19 @@ import {
 } from "@/lib/validate";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : new Date().getFullYear();
+  try {
+    const { searchParams } = new URL(request.url);
+    const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : new Date().getFullYear();
 
-  const payments = await prisma.taxPayment.findMany({
-    where: { year },
-    orderBy: [{ quarter: "asc" }, { type: "asc" }],
-  });
-  return NextResponse.json(payments);
+    const payments = await prisma.taxPayment.findMany({
+      where: { year },
+      orderBy: [{ quarter: "asc" }, { type: "asc" }],
+    });
+    return NextResponse.json(payments);
+  } catch (error) {
+    console.error("GET /api/tax-payments error:", error);
+    return NextResponse.json({ error: "Failed to fetch tax payments" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

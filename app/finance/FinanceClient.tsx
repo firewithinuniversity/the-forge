@@ -41,6 +41,20 @@ const LazyYTDCharts = dynamic(() => import("./YTDComparisonCharts"), {
   ),
 });
 
+const LazyBudgetTracker = dynamic(() => import("./BudgetTracker"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-5 mb-8">
+      <div className="h-4 w-48 bg-[#27272A] rounded mb-4 animate-pulse" />
+      <div className="space-y-4">
+        <div className="h-12 bg-[#09090B] rounded animate-pulse" />
+        <div className="h-12 bg-[#09090B] rounded animate-pulse" />
+        <div className="h-12 bg-[#09090B] rounded animate-pulse" />
+      </div>
+    </div>
+  ),
+});
+
 interface Transaction {
   id: string;
   type: string;
@@ -97,6 +111,8 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalType, setAddModalType] = useState<"income" | "expense">("expense");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [budgetExpanded, setBudgetExpanded] = useState(false);
   const PAGE_SIZE = 20;
 
   const filtered = useMemo(() => {
@@ -221,6 +237,41 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
       {/* Year-over-Year Comparison (lazy-loaded, collapsible) */}
       <LazyYTDCharts />
 
+      {/* Budget vs. Actual (lazy-loaded, collapsible) */}
+      <div className="mb-8">
+        <button
+          onClick={() => setBudgetExpanded(!budgetExpanded)}
+          className="w-full flex items-center justify-between rounded-xl bg-[#0F0F11] border border-[#27272A] p-5 [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#E8501A]/30 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <svg
+              className={`h-4 w-4 text-[#52525B] transition-transform ${budgetExpanded ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            <h3 className="text-sm font-semibold text-[#FAFAFA]">
+              Budget vs. Actual
+            </h3>
+            <span className="text-xs text-[#52525B]">
+              Monthly budget tracking
+            </span>
+          </div>
+          <span className="text-xs text-[#52525B] group-hover:text-[#A1A1AA] transition-colors">
+            {budgetExpanded ? "Collapse" : "Expand"}
+          </span>
+        </button>
+
+        {budgetExpanded && (
+          <div className="mt-4">
+            <LazyBudgetTracker />
+          </div>
+        )}
+      </div>
+
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Transaction Table */}
         <div className="lg:col-span-3">
@@ -311,14 +362,14 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
                           <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)}
                             className="rounded border-[#27272A] bg-[#09090B] text-[#E8501A] focus:ring-[#E8501A]/30" />
                         </td>
-                        <td className="py-3 px-3 text-xs text-[#A1A1AA] whitespace-nowrap">
+                        <td className="py-3 px-3 text-xs text-[#A1A1AA] whitespace-nowrap cursor-pointer hover:text-[#FAFAFA] transition-colors" onClick={() => setEditingTransaction(t)}>
                           {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3 px-3 cursor-pointer" onClick={() => setEditingTransaction(t)}>
                           <p className="text-sm text-[#FAFAFA] truncate max-w-[250px]">{t.description}</p>
                           {t.notes && <p className="text-[11px] text-[#52525B] truncate max-w-[250px]">{t.notes}</p>}
                           {t.project && (
-                            <Link href={`/projects/${t.project.id}`} className="text-[10px] text-[#E8501A] hover:underline">
+                            <Link href={`/projects/${t.project.id}`} className="text-[10px] text-[#E8501A] hover:underline" onClick={(e) => e.stopPropagation()}>
                               {t.project.name}
                             </Link>
                           )}
@@ -415,6 +466,16 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
         projects={data.projects}
         onSaved={() => { setShowAddModal(false); router.refresh(); }}
       />
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        transaction={editingTransaction}
+        onClose={() => setEditingTransaction(null)}
+        categories={data.categories}
+        projects={data.projects}
+        onSaved={() => { setEditingTransaction(null); router.refresh(); }}
+        onDeleted={() => { setEditingTransaction(null); setSelected((prev) => { const next = new Set(prev); if (editingTransaction) next.delete(editingTransaction.id); return next; }); router.refresh(); }}
+      />
     </div>
   );
 }
@@ -468,6 +529,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
   const [autoStripeFee, setAutoStripeFee] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [duplicateWarning, setDuplicateWarning] = useState<{ id: string; description: string; date: string }[] | null>(null);
 
   // Reset when modal opens with new type
   useState(() => { setType(initialType); });
@@ -488,11 +550,12 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent, skipDuplicateCheck = false) {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
     setErrors({});
+    if (skipDuplicateCheck) setDuplicateWarning(null);
     try {
       // Create main transaction
       const res = await fetch("/api/transactions", {
@@ -502,8 +565,19 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
           type, amount: parsedAmount, description: description.trim(),
           category, date, projectId: projectId || null,
           notes: notes.trim() || null, receiptSaved, taxDeductible: type === "expense" ? taxDeductible : "unknown",
+          ...(skipDuplicateCheck ? { skipDuplicateCheck: true } : {}),
         }),
       });
+
+      if (res.status === 409) {
+        const data = await res.json();
+        if (data.error === "duplicate_warning") {
+          setDuplicateWarning(data.duplicates);
+          setSaving(false);
+          return;
+        }
+      }
+
       if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
 
       // Auto-create Stripe fee if toggled on
@@ -521,6 +595,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
             notes: `Auto-calculated: 2.9% + $0.30 on ${formatCurrency(parsedAmount)}`,
             receiptSaved: true,
             taxDeductible: "yes",
+            skipDuplicateCheck: true,
           }),
         });
       }
@@ -529,6 +604,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
       setType(initialType); setAmount(""); setDescription(""); setCategory("");
       setDate(new Date().toISOString().split("T")[0]); setProjectId(""); setNotes("");
       setReceiptSaved(false); setTaxDeductible("unknown"); setAutoStripeFee(false);
+      setDuplicateWarning(null);
       onSaved();
     } catch (err) { setErrors({ form: err instanceof Error ? err.message : "Failed to save" }); }
     finally { setSaving(false); }
@@ -538,6 +614,39 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
     <Modal open={open} onClose={onClose} title={type === "income" ? "Add Income" : "Add Expense"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {errors.form && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">{errors.form}</div>}
+
+        {/* Duplicate Warning */}
+        {duplicateWarning && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-base leading-none mt-0.5">&#9888;&#65039;</span>
+              <span className="font-medium">A similar transaction already exists</span>
+            </div>
+            <ul className="ml-6 mb-3 space-y-1 text-xs text-amber-300/80">
+              {duplicateWarning.map((d) => (
+                <li key={d.id}>
+                  {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} &mdash; {d.description}
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-center gap-2 ml-6">
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, true)}
+                className="rounded-md bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 text-xs font-medium text-amber-300 hover:bg-amber-500/30 transition-colors"
+              >
+                Create Anyway
+              </button>
+              <button
+                type="button"
+                onClick={() => setDuplicateWarning(null)}
+                className="rounded-md px-3 py-1.5 text-xs text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Spending Alert */}
         {showSpendingAlert && (
@@ -655,6 +764,204 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={saving}>{saving ? "Saving..." : type === "income" ? "Add Income" : "Add Expense"}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/* ─── Edit Transaction Modal ─── */
+function EditTransactionModal({ transaction, onClose, categories, projects, onSaved, onDeleted }: {
+  transaction: Transaction | null; onClose: () => void; categories: Category[]; projects: Project[]; onSaved: () => void; onDeleted: () => void;
+}) {
+  const [type, setType] = useState<"income" | "expense">("expense");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [date, setDate] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [notes, setNotes] = useState("");
+  const [receiptSaved, setReceiptSaved] = useState(false);
+  const [taxDeductible, setTaxDeductible] = useState("unknown");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Populate fields when transaction changes
+  useEffect(() => {
+    if (transaction) {
+      setType(transaction.type as "income" | "expense");
+      setAmount(String(transaction.amount));
+      setDescription(transaction.description);
+      setCategory(transaction.category);
+      setDate(transaction.date.split("T")[0]);
+      setProjectId(transaction.projectId || "");
+      setNotes(transaction.notes || "");
+      setReceiptSaved(transaction.receiptSaved);
+      setTaxDeductible(transaction.taxDeductible);
+      setErrors({});
+    }
+  }, [transaction]);
+
+  const open = transaction !== null;
+  const filteredCategories = categories.filter((c) => c.type === type || c.type === "both");
+  const parsedAmount = parseFloat(amount) || 0;
+
+  function validate(): boolean {
+    const errs: Record<string, string> = {};
+    if (!amount || parsedAmount <= 0) errs.amount = "Amount must be a positive number";
+    if (!description.trim()) errs.description = "Description is required";
+    if (!category) errs.category = "Category is required";
+    if (!date) errs.date = "Date is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!transaction || !validate()) return;
+    setSaving(true);
+    setErrors({});
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          amount: parsedAmount,
+          description: description.trim(),
+          category,
+          date,
+          projectId: projectId || null,
+          notes: notes.trim() || null,
+          receiptSaved,
+          taxDeductible: type === "expense" ? taxDeductible : "unknown",
+        }),
+      });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
+      onSaved();
+    } catch (err) { setErrors({ form: err instanceof Error ? err.message : "Failed to save" }); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete() {
+    if (!transaction || !confirm("Are you sure you want to delete this transaction? This cannot be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
+      onDeleted();
+    } catch (err) { setErrors({ form: err instanceof Error ? err.message : "Failed to delete" }); }
+    finally { setDeleting(false); }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={type === "income" ? "Edit Income" : "Edit Expense"}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.form && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">{errors.form}</div>}
+
+        {/* Type toggle */}
+        <div className="flex rounded-lg bg-[#09090B] border border-[#27272A] p-1">
+          {(["expense", "income"] as const).map((t) => (
+            <button key={t} type="button" onClick={() => { setType(t); setCategory(""); }}
+              className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
+                type === t ? (t === "income" ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400") : "text-[#52525B] hover:text-[#A1A1AA]"
+              }`}>{t === "income" ? "Income" : "Expense"}</button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Amount <span className="text-red-400">*</span></label>
+            <input type="number" step="0.01" min="0" value={amount} onChange={(e) => setAmount(e.target.value)}
+              className={`${inputClasses} ${errors.amount ? "!border-red-500" : ""}`} placeholder="0.00" />
+            {errors.amount && <p className="text-xs text-red-400 mt-1">{errors.amount}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Date <span className="text-red-400">*</span></label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+              className={`${inputClasses} ${errors.date ? "!border-red-500" : ""}`} />
+            {errors.date && <p className="text-xs text-red-400 mt-1">{errors.date}</p>}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Description <span className="text-red-400">*</span></label>
+          <input type="text" value={description} onChange={(e) => setDescription(e.target.value)}
+            className={`${inputClasses} ${errors.description ? "!border-red-500" : ""}`} placeholder="What was this for?" />
+          {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description}</p>}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Category <span className="text-red-400">*</span></label>
+            <select value={category} onChange={(e) => setCategory(e.target.value)}
+              className={`${inputClasses} ${errors.category ? "!border-red-500" : ""}`}>
+              <option value="">Select category</option>
+              {filteredCategories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
+            {errors.category && <p className="text-xs text-red-400 mt-1">{errors.category}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Project (optional)</label>
+            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className={inputClasses}>
+              <option value="">No project</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Expense-specific fields */}
+        {type === "expense" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Tax Deductible?</label>
+              <select value={taxDeductible} onChange={(e) => setTaxDeductible(e.target.value)} className={inputClasses}>
+                <option value="unknown">Not sure</option>
+                <option value="yes">Yes — Deductible</option>
+                <option value="no">No — Not deductible</option>
+                <option value="partial">Partial</option>
+              </select>
+            </div>
+            <div className="flex items-end pb-0.5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={receiptSaved} onChange={(e) => setReceiptSaved(e.target.checked)}
+                  className="rounded border-[#27272A] bg-[#09090B] text-[#E8501A] focus:ring-[#E8501A]/30" />
+                <span className="text-sm text-[#A1A1AA]">Receipt saved?</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Income receipt toggle */}
+        {type === "income" && (
+          <div className="flex items-center">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={receiptSaved} onChange={(e) => setReceiptSaved(e.target.checked)}
+                className="rounded border-[#27272A] bg-[#09090B] text-[#E8501A] focus:ring-[#E8501A]/30" />
+              <span className="text-sm text-[#A1A1AA]">Receipt / confirmation saved?</span>
+            </label>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-medium text-[#A1A1AA] mb-1.5">Notes (optional)</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={`${inputClasses} resize-none`} placeholder="Additional details..." />
+        </div>
+
+        <div className="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || saving}
+            className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/20 hover:border-red-500/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving || deleting}>{saving ? "Saving..." : "Save Changes"}</Button>
+          </div>
         </div>
       </form>
     </Modal>

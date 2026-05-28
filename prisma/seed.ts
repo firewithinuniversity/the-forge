@@ -65,6 +65,7 @@ async function main() {
         ownershipSplit: 0.5,
         qbiDeductionRate: 0.2,
         taxReserveRate: 0.30,
+        burnRateThreshold: 5000,
         partner1Name: "Brett Breunig",
         partner2Name: "Jude Begay",
       },
@@ -73,6 +74,31 @@ async function main() {
   } else {
     console.log("Tax config already exists, skipping.");
   }
+
+  // Seed quarterly tax payment deadlines for current year
+  console.log("Seeding tax payment deadlines...");
+  const currentYear = new Date().getFullYear();
+  const taxDeadlines = [
+    { quarter: 1, dueDate: new Date(currentYear, 3, 15), type: "federal" },
+    { quarter: 1, dueDate: new Date(currentYear, 3, 15), type: "state" },
+    { quarter: 2, dueDate: new Date(currentYear, 5, 15), type: "federal" },
+    { quarter: 2, dueDate: new Date(currentYear, 5, 15), type: "state" },
+    { quarter: 3, dueDate: new Date(currentYear, 8, 15), type: "federal" },
+    { quarter: 3, dueDate: new Date(currentYear, 8, 15), type: "state" },
+    { quarter: 4, dueDate: new Date(currentYear + 1, 0, 15), type: "federal" },
+    { quarter: 4, dueDate: new Date(currentYear + 1, 0, 15), type: "state" },
+  ];
+  for (const td of taxDeadlines) {
+    const exists = await prisma.taxPayment.findFirst({
+      where: { year: currentYear, quarter: td.quarter, type: td.type },
+    });
+    if (!exists) {
+      await prisma.taxPayment.create({
+        data: { year: currentYear, quarter: td.quarter, type: td.type, amount: 0, dueDate: td.dueDate },
+      });
+    }
+  }
+  console.log("Seeded tax payment deadlines.");
 
   console.log("Seeding recurring expenses...");
   for (const exp of recurringExpenses) {

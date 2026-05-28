@@ -70,18 +70,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const oldRecord = await prisma.distribution.findUnique({ where: { id } });
-  await prisma.distribution.delete({ where: { id } });
+  try {
+    const { id } = await params;
+    const oldRecord = await prisma.distribution.findUnique({ where: { id } });
+    await prisma.distribution.delete({ where: { id } });
 
-  if (oldRecord) {
-    logAudit("distribution", id, "delete", {
-      type: oldRecord.type,
-      llcNetProfit: oldRecord.llcNetProfit,
-      partner1Share: oldRecord.partner1Share,
-      partner2Share: oldRecord.partner2Share,
-    });
+    if (oldRecord) {
+      logAudit("distribution", id, "delete", {
+        type: oldRecord.type,
+        llcNetProfit: oldRecord.llcNetProfit,
+        partner1Share: oldRecord.partner1Share,
+        partner2Share: oldRecord.partner2Share,
+      });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("DELETE /api/distributions/[id] error:", error);
+    return NextResponse.json({ error: "Failed to delete distribution" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true });
 }

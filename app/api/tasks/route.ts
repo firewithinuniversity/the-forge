@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  ValidationError,
+  requireString,
+  optionalString,
+  optionalEnum,
+  optionalDate,
+  maxLength,
+} from "@/lib/validate";
 
 const VALID_STATUSES = ["todo", "in_progress", "review", "done"];
 const VALID_PRIORITIES = ["low", "medium", "high", "urgent"];
@@ -34,39 +42,26 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, description, status, priority, projectId, phaseId, assignee, dueDate, startDate, endDate } = body;
 
-    if (!title || typeof title !== "string" || title.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Task title is required" },
-        { status: 400 }
-      );
-    }
+    const title = maxLength(requireString(body.title, "title"), 200, "title");
+    const projectId = requireString(body.projectId, "projectId");
+    const status = optionalEnum(body.status, VALID_STATUSES, "status") ?? "todo";
+    const priority = optionalEnum(body.priority, VALID_PRIORITIES, "priority") ?? "medium";
 
-    if (!projectId || typeof projectId !== "string") {
-      return NextResponse.json(
-        { error: "Project ID is required" },
-        { status: 400 }
-      );
-    }
+    let description = optionalString(body.description, "description") ?? null;
+    if (description) description = maxLength(description, 5000, "description");
 
-    if (status && !VALID_STATUSES.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const assignee = optionalString(body.assignee, "assignee");
+    if (assignee) maxLength(assignee, 100, "assignee");
 
-    if (priority && !VALID_PRIORITIES.includes(priority)) {
-      return NextResponse.json(
-        { error: `Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const dueDate = optionalDate(body.dueDate, "dueDate") ?? null;
+    const startDate = optionalDate(body.startDate, "startDate") ?? null;
+    const endDate = optionalDate(body.endDate, "endDate") ?? null;
+    const phaseId = optionalString(body.phaseId, "phaseId") ?? null;
 
     // Get the max order for the status column in this project
     const maxOrderTask = await prisma.task.findFirst({
-      where: { projectId, status: status || "todo" },
+      where: { projectId, status },
       orderBy: { order: "desc" },
       select: { order: true },
     });
@@ -74,22 +69,25 @@ export async function POST(request: Request) {
 
     const task = await prisma.task.create({
       data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        status: status || "todo",
-        priority: priority || "medium",
+        title,
+        description,
+        status,
+        priority,
         order: nextOrder,
         projectId,
-        phaseId: phaseId || null,
+        phaseId,
         assignee: assignee || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
+        dueDate,
+        startDate,
+        endDate,
       },
     });
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/tasks error:", error);
     return NextResponse.json(
       { error: "Failed to create task" },

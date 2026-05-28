@@ -15,6 +15,11 @@ export async function GET() {
       taxPayments,
       recurringExpenses,
       distributions,
+      notifications,
+      reminders,
+      projectTemplates,
+      auditLogs,
+      calendarEvents,
     ] = await Promise.all([
       prisma.project.findMany({ orderBy: { createdAt: "asc" } }),
       prisma.phase.findMany({ orderBy: { createdAt: "asc" } }),
@@ -27,11 +32,16 @@ export async function GET() {
       prisma.taxPayment.findMany({ orderBy: [{ year: "asc" }, { quarter: "asc" }] }),
       prisma.recurringExpense.findMany({ orderBy: { service: "asc" } }),
       prisma.distribution.findMany({ orderBy: { date: "asc" } }),
+      prisma.notification.findMany({ orderBy: { createdAt: "desc" }, take: 200 }),
+      prisma.reminder.findMany({ orderBy: { remindAt: "asc" } }),
+      prisma.projectTemplate.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 500 }),
+      prisma.calendarEvent.findMany({ orderBy: { date: "asc" } }),
     ]);
 
     const exportData = {
       exportedAt: new Date().toISOString(),
-      version: "1.0",
+      version: "2.1",
       data: {
         projects,
         phases,
@@ -44,6 +54,11 @@ export async function GET() {
         taxPayments,
         recurringExpenses,
         distributions,
+        notifications,
+        reminders,
+        projectTemplates,
+        auditLogs,
+        calendarEvents,
       },
       summary: {
         projects: projects.length,
@@ -56,6 +71,11 @@ export async function GET() {
         taxPayments: taxPayments.length,
         recurringExpenses: recurringExpenses.length,
         distributions: distributions.length,
+        notifications: notifications.length,
+        reminders: reminders.length,
+        projectTemplates: projectTemplates.length,
+        auditLogs: auditLogs.length,
+        calendarEvents: calendarEvents.length,
       },
     };
 
