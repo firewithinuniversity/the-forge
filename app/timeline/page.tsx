@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import TimelineClient from "./TimelineClient";
 
+export const dynamic = "force-dynamic";
+
 async function getTimelineData() {
   const projects = await prisma.project.findMany({
     where: { archived: false },

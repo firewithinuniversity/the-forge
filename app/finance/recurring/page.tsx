@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import RecurringClient from "./RecurringClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getData() {
   const expenses = await prisma.recurringExpense.findMany({ orderBy: { service: "asc" } });

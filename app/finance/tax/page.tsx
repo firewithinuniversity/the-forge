@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import TaxCenterClient from "./TaxCenterClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getTaxData() {
   const year = new Date().getFullYear();

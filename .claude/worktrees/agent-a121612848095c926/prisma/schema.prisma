@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ── Projects ────────────────────────────────────────────────────────────────
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#E8A020")
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  phases         Phase[]
+  tasks          Task[]
+  notes          Note[]
+  transactions   Transaction[]
+  calendarEvents CalendarEvent[]
+}
+
+// ── Phases (milestones within a project) ────────────────────────────────────
+model Phase {
+  id        String    @id @default(cuid())
+  name      String
+  order     Int       @default(0)
+  status    String    @default("active") // active | completed
+  startDate DateTime?
+  endDate   DateTime?
+  projectId String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+}
+
+// ── Tasks ───────────────────────────────────────────────────────────────────
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("todo") // todo | in_progress | review | done
+  priority    String    @default("medium") // low | medium | high | urgent
+  order       Int       @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  dueDate     DateTime?
+  projectId   String
+  phaseId     String?
+  assignee    String? // "Brett" | "Jude" | null
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase   Phase?  @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// ── Notes (freeform notes on a project) ─────────────────────────────────────
+model Note {
+  id            String   @id @default(cuid())
+  title         String   @default("")
+  content       String
+  projectId     String?
+  transactionId String?
+  pinned        Boolean  @default(false)
+  category      String   @default("General") // General | Meeting Notes | Tax Notes | Legal | Ideas | Ministry
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+}
+
+// ── Finance: Transactions ───────────────────────────────────────────────────
+model Transaction {
+  id             String   @id @default(cuid())
+  type           String // "income" | "expense"
+  amount         Float
+  description    String
+  category       String
+  date           DateTime
+  projectId      String?
+  recurring      Boolean  @default(false)
+  notes          String?
+  receiptSaved   Boolean  @default(false)
+  taxDeductible  String   @default("unknown") // "yes" | "no" | "partial" | "unknown"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  linkedNotes Note[]
+
+  @@index([type])
+  @@index([date])
+  @@index([category])
+}
+
+// ── Finance: Categories ─────────────────────────────────────────────────────
+model Category {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  type  String // "income" | "expense" | "both"
+  color String  @default("#9090A0")
+  icon  String?
+
+  @@index([type])
+}
+
+// ── Finance: Budgets ────────────────────────────────────────────────────────
+model Budget {
+  id         String   @id @default(cuid())
+  categoryId String
+  amount     Float
+  month      Int
+  year       Int
+  createdAt  DateTime @default(now())
+
+  @@unique([categoryId, month, year])
+}
+
+// ── Finance: Tax Configuration ─────────────────────────────────────────────
+model TaxConfig {
+  id                  String @id @default(cuid())
+  federalTaxRate      Float  @default(0.12)
+  selfEmploymentRate  Float  @default(0.153)
+  seDeduction         Float  @default(0.5)
+  stateTaxRate        Float  @default(0.0465)
+  stateName           String @default("Wisconsin")
+  ownershipSplit      Float  @default(0.5)
+  qbiDeductionRate    Float  @default(0.2)
+  taxReserveRate      Float  @default(0.30)
+  partner1Name        String @default("Brett Breunig")
+  partner2Name        String @default("Jude Begay")
+  burnRateThreshold   Float  @default(5000)  // Monthly expense warning threshold
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ── Finance: Tax Payments ──────────────────────────────────────────────────
+model TaxPayment {
+  id        String    @id @default(cuid())
+  year      Int
+  quarter   Int       // 1-4
+  type      String    // "federal" | "state" | "self_employment"
+  amount    Float
+  dueDate   DateTime
+  paidDate  DateTime?
+  paid      Boolean   @default(false)
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([year, quarter, type])
+  @@index([year])
+}
+
+// ── Finance: Recurring Expenses ────────────────────────────────────────────
+model RecurringExpense {
+  id           String    @id @default(cuid())
+  service      String
+  category     String
+  monthlyCost  Float
+  annualCost   Float?
+  billingCycle String    @default("monthly") // "monthly" | "annual" | "per_transaction"
+  nextDueDate  DateTime?
+  active       Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ── Finance: Distributions ─────────────────────────────────────────────────
+model Distribution {
+  id           String    @id @default(cuid())
+  date         DateTime
+  type         String    @default("quarterly") // "quarterly" | "annual" | "special"
+  llcNetProfit Float
+  partner1Share Float
+  partner2Share Float
+  method       String?   // "bank_transfer" | "check"
+  approvedBy   String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([date])
+}
+
+// ── Notifications (in-app alerts) ──────────────────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "deadline" | "overdue" | "burn_rate" | "milestone" | "auto_transaction"
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  dismissed Boolean  @default(false)
+  link      String?  // Optional deep-link path
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ── Project Templates ──────────────────────────────────────────────────────
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#E8501A")
+  phases      String   @default("[]") // JSON: [{name, order}]
+  tasks       String   @default("[]") // JSON: [{title, description, priority, phaseName}]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Calendar Events (meetings, notes, custom events) ───────────────────────
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   @default("meeting") // "meeting" | "note" | "deadline" | "other"
+  date        DateTime
+  endDate     DateTime?
+  allDay      Boolean  @default(false)
+  color       String   @default("#E8501A")
+  projectId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+}
+
+// ── Reminders ──────────────────────────────────────────────────────────────
+model Reminder {
+  id         String   @id @default(cuid())
+  title      String
+  message    String   @default("")
+  remindAt   DateTime
+  entityType String?  // "task" | "phase" | "project" | "tax" | "recurring" | null (general)
+  entityId   String?
+  link       String?  // Deep-link path
+  fired      Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([fired, remindAt])
+  @@index([createdAt])
+}
+
+// ── Audit Trail ────────────────────────────────────────────────────────────
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String   // "transaction" | "distribution" | "project" | "tax_payment"
+  entityId    String
+  action      String   // "create" | "update" | "delete"
+  changes     String   @default("{}") // JSON: {field: {old, new}}
+  performedBy String?  // "Brett" | "Jude" | "System"
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

@@ -1,7 +1,7 @@
 import { getCalendarEvents } from "@/app/api/calendar/route";
 import CalendarClient from "./CalendarClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function CalendarPage() {
   const now = new Date();

@@ -3,7 +3,7 @@ import FinanceClient from "./FinanceClient";
 
 function roundCents(n: number): number { return Math.round(n * 100) / 100; }
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getFinanceData() {
   const now = new Date();

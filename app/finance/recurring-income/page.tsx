@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import RecurringIncomeClient from "./RecurringIncomeClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getData() {
   const incomes = await prisma.recurringIncome.findMany({ orderBy: { source: "asc" } });

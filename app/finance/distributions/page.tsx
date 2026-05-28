@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import DistributionsClient from "./DistributionsClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getData() {
   const [distributions, taxConfig] = await Promise.all([

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import NotesClient from "./NotesClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getNotesData() {
   const [notes, projects, recentTransactions] = await Promise.all([

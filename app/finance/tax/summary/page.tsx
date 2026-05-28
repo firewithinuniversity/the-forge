@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import TaxSummaryClient from "./TaxSummaryClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getTaxSummaryData(year: number) {
   const yearStart = new Date(year, 0, 1);

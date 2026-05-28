@@ -4,7 +4,7 @@ import KPICard from "./components/ui/KPICard";
 import DashboardActions from "./components/DashboardActions";
 import AuditLogViewer from "./components/AuditLogViewer";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getDashboardData() {
   const now = new Date();

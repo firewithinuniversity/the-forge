@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import ProjectsListClient from "./ProjectsListClient";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 async function getProjects() {
   const projects = await prisma.project.findMany({
