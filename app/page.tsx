@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import KPICard from "./components/ui/KPICard";
 import DashboardActions from "./components/DashboardActions";
+import AuditLogViewer from "./components/AuditLogViewer";
 
 export const revalidate = 300;
 
@@ -278,7 +279,7 @@ export default async function Home() {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-[#FAFAFA]">Active Projects</h2>
-            <Link href="/projects" className="text-xs text-[#A1A1AA] hover:text-[#E8501A] transition-colors">View all</Link>
+            <Link href="/projects" className="text-xs text-[#A1A1AA] hover:text-[#E8501A] transition-[color]">View all</Link>
           </div>
 
           {data.projectCards.length === 0 ? (
@@ -293,9 +294,10 @@ export default async function Home() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {data.projectCards.map((project) => (
+              {data.projectCards.map((project, index) => (
                 <Link key={project.id} href={`/projects/${project.id}`}
-                  className="group rounded-xl bg-[#0F0F11] border border-[#27272A] p-5 hover:border-[#3F3F46] transition-colors duration-150">
+                  className="group rounded-xl bg-[#0F0F11] border border-[#27272A] p-5 hover:border-[#3F3F46] transition-[border-color] duration-150 animate-stagger-in"
+                  style={{ animationDelay: `${index * 40}ms` }}>
                   <div className="flex items-start gap-3 mb-3">
                     <div className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: project.color }} />
                     <div className="flex-1 min-w-0">
@@ -309,7 +311,7 @@ export default async function Home() {
                       <span className="text-[11px] text-[#52525B]">{project.totalTasks} tasks</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-[#1A1A1E]">
-                      <div className="h-full rounded-full bg-[#E8501A] transition-all duration-300" style={{ width: `${project.progress}%` }} />
+                      <div className="h-full rounded-full bg-[#E8501A] transition-[width] duration-300" style={{ width: `${project.progress}%` }} />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
@@ -334,7 +336,7 @@ export default async function Home() {
               </div>
             ) : (
               <div className="divide-y divide-[#27272A]">
-                {data.activity.map((item) => {
+                {data.activity.map((item, index) => {
                   const inner = (
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
@@ -346,11 +348,11 @@ export default async function Home() {
                     </div>
                   );
                   return item.href ? (
-                    <Link key={item.id} href={item.href} className="block px-4 py-3 hover:bg-[#1A1A1E] transition-colors">
+                    <Link key={item.id} href={item.href} className="block px-4 py-3 hover:bg-[#1A1A1E] transition-[background-color] animate-stagger-in" style={{ animationDelay: `${index * 40}ms` }}>
                       {inner}
                     </Link>
                   ) : (
-                    <div key={item.id} className="px-4 py-3 hover:bg-[#1A1A1E] transition-colors">
+                    <div key={item.id} className="px-4 py-3 hover:bg-[#1A1A1E] transition-[background-color] animate-stagger-in" style={{ animationDelay: `${index * 40}ms` }}>
                       {inner}
                     </div>
                   );
@@ -358,6 +360,19 @@ export default async function Home() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Audit Trail */}
+      <div className="mt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <svg className="h-4 w-4 text-[#E8501A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15a2.25 2.25 0 0 1 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+          </svg>
+          <h2 className="text-sm font-semibold text-[#FAFAFA]">Audit Trail</h2>
+        </div>
+        <div className="rounded-xl bg-[#0F0F11] border border-[#27272A]">
+          <AuditLogViewer limit={10} />
         </div>
       </div>
     </div>

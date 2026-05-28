@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  ValidationError,
+  optionalString,
+  optionalBoolean,
+} from "@/lib/validate";
 
 // GET /api/projects/[id] — single project with phases and tasks
 export async function GET(
@@ -45,13 +50,34 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, color, archived } = body;
 
+    // ── Input validation ────────────────────────────────────────────────
     const data: Record<string, unknown> = {};
-    if (name !== undefined) data.name = name.trim();
-    if (description !== undefined) data.description = description?.trim() || null;
-    if (color !== undefined) data.color = color;
-    if (archived !== undefined) data.archived = archived;
+
+    if (body.name !== undefined) {
+      const name = optionalString(body.name, "name");
+      if (name !== undefined && name.length === 0) {
+        return NextResponse.json({ error: "name cannot be empty" }, { status: 400 });
+      }
+      data.name = name;
+    }
+    if (body.description !== undefined) {
+      data.description = optionalString(body.description, "description") ?? null;
+    }
+    if (body.color !== undefined) {
+      const color = optionalString(body.color, "color");
+      if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) {
+        return NextResponse.json(
+          { error: "color must be a valid hex color (e.g. #f59e0b)" },
+          { status: 400 }
+        );
+      }
+      data.color = color;
+    }
+    if (body.archived !== undefined) {
+      data.archived = optionalBoolean(body.archived, "archived");
+    }
+    // ── End validation ──────────────────────────────────────────────────
 
     const project = await prisma.project.update({
       where: { id },
@@ -60,6 +86,9 @@ export async function PATCH(
 
     return NextResponse.json(project);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("PATCH /api/projects/[id] error:", error);
     return NextResponse.json(
       { error: "Failed to update project" },

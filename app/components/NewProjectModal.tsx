@@ -135,7 +135,7 @@ export default function NewProjectModal({
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full transition-all ${
+                  className={`h-8 w-8 rounded-full transition-[transform,box-shadow] duration-150 ${
                     color === c
                       ? "ring-2 ring-white ring-offset-2 ring-offset-slate-800 scale-110"
                       : "hover:scale-105"

@@ -31,6 +31,16 @@ const LazyCharts = dynamic(() => import("./Charts"), {
   ),
 });
 
+const LazyYTDCharts = dynamic(() => import("./YTDComparisonCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-5 mb-8">
+      <div className="h-4 w-56 bg-[#27272A] rounded mb-4 animate-pulse" />
+      <div className="h-[280px] bg-[#09090B] rounded animate-pulse" />
+    </div>
+  ),
+});
+
 interface Transaction {
   id: string;
   type: string;
@@ -208,6 +218,9 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
         formatCurrency={formatCurrency}
       />
 
+      {/* Year-over-Year Comparison (lazy-loaded, collapsible) */}
+      <LazyYTDCharts />
+
       <div className="grid lg:grid-cols-4 gap-6">
         {/* Transaction Table */}
         <div className="lg:col-span-3">
@@ -290,10 +303,10 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
                     </td>
                   </tr>
                 ) : (
-                  paginatedTransactions.map((t) => {
+                  paginatedTransactions.map((t, index) => {
                     const deductible = DEDUCTIBLE_LABELS[t.taxDeductible] || DEDUCTIBLE_LABELS.unknown;
                     return (
-                      <tr key={t.id} className="border-b border-[#27272A]/50 hover:bg-[#1A1A1E]/50 transition-colors">
+                      <tr key={t.id} className="border-b border-[#27272A]/50 hover:bg-[#1A1A1E]/50 transition-[background-color] animate-stagger-in" style={{ animationDelay: `${index * 30}ms` }}>
                         <td className="py-3 px-3">
                           <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)}
                             className="rounded border-[#27272A] bg-[#09090B] text-[#E8501A] focus:ring-[#E8501A]/30" />
@@ -382,7 +395,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
                         <span className="text-xs font-medium text-[#FAFAFA] tabular-nums">{formatCurrency(cat.amount)}</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-[#1A1A1E]">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: catData?.color || "#A1A1AA" }} />
+                        <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${pct}%`, backgroundColor: catData?.color || "#A1A1AA" }} />
                       </div>
                     </div>
                   );

@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  ValidationError,
+  optionalString,
+  optionalBoolean,
+  optionalEnum,
+} from "@/lib/validate";
 
 export async function PATCH(
   request: Request,
@@ -8,19 +14,44 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, content, projectId, transactionId, pinned, category } = body;
 
+    // ── Input validation ────────────────────────────────────────────────
     const data: Record<string, unknown> = {};
-    if (title !== undefined) data.title = title.trim();
-    if (content !== undefined) data.content = content.trim();
-    if (projectId !== undefined) data.projectId = projectId || null;
-    if (transactionId !== undefined) data.transactionId = transactionId || null;
-    if (pinned !== undefined) data.pinned = pinned;
-    if (category !== undefined) data.category = category;
+
+    if (body.title !== undefined) {
+      data.title = optionalString(body.title, "title") ?? "";
+    }
+    if (body.content !== undefined) {
+      const content = optionalString(body.content, "content");
+      if (content !== undefined && content.length === 0) {
+        return NextResponse.json({ error: "content cannot be empty" }, { status: 400 });
+      }
+      data.content = content;
+    }
+    if (body.projectId !== undefined) {
+      data.projectId = optionalString(body.projectId, "projectId") || null;
+    }
+    if (body.transactionId !== undefined) {
+      data.transactionId = optionalString(body.transactionId, "transactionId") || null;
+    }
+    if (body.pinned !== undefined) {
+      data.pinned = optionalBoolean(body.pinned, "pinned");
+    }
+    if (body.category !== undefined) {
+      data.category = optionalEnum(
+        body.category,
+        ["General", "Meeting Notes", "Tax Notes", "Legal", "Ideas", "Ministry"],
+        "category"
+      );
+    }
+    // ── End validation ──────────────────────────────────────────────────
 
     const note = await prisma.note.update({ where: { id }, data });
     return NextResponse.json(note);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("PATCH /api/notes/[id] error:", error);
     return NextResponse.json({ error: "Failed to update note" }, { status: 500 });
   }

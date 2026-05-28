@@ -99,7 +99,7 @@ export default function DashboardActions() {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full transition-all ${
+                  className={`h-7 w-7 rounded-full transition-[transform,box-shadow] duration-150 ${
                     color === c ? "ring-2 ring-white ring-offset-2 ring-offset-[#0F0F11]" : "hover:scale-110"
                   }`}
                   style={{ backgroundColor: c }}

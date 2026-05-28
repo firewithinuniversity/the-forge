@@ -20,7 +20,17 @@ async function getData() {
   const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const netProfit = totalIncome - totalExpenses;
 
-  const config = taxConfig || { partner1Name: "Brett Breunig", partner2Name: "Jude Begay", ownershipSplit: 0.5, taxReserveRate: 0.3 };
+  const config = taxConfig || {
+    partner1Name: "Brett Breunig",
+    partner2Name: "Jude Begay",
+    ownershipSplit: 0.5,
+    taxReserveRate: 0.3,
+    federalTaxRate: 0.12,
+    selfEmploymentRate: 0.153,
+    seDeduction: 0.5,
+    stateTaxRate: 0.0465,
+    qbiDeductionRate: 0.2,
+  };
 
   return {
     distributions: distributions.map((d) => ({
@@ -34,6 +44,11 @@ async function getData() {
     ownershipSplit: config.ownershipSplit,
     netProfit,
     taxReserveRate: config.taxReserveRate,
+    federalTaxRate: config.federalTaxRate,
+    selfEmploymentRate: config.selfEmploymentRate,
+    seDeduction: config.seDeduction,
+    stateTaxRate: config.stateTaxRate,
+    qbiDeductionRate: config.qbiDeductionRate,
   };
 }
 

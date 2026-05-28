@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "../../components/ui/PageHeader";
 import Button from "../../components/ui/Button";
@@ -25,6 +25,23 @@ interface Props {
   ownershipSplit: number;
   netProfit: number;
   taxReserveRate: number;
+  federalTaxRate: number;
+  selfEmploymentRate: number;
+  seDeduction: number;
+  stateTaxRate: number;
+  qbiDeductionRate: number;
+}
+
+interface SimPartnerResult {
+  grossShare: number;
+  seTax: number;
+  seDeductionAmt: number;
+  taxableIncome: number;
+  qbiDeduction: number;
+  federalTax: number;
+  stateTax: number;
+  totalTax: number;
+  takeHome: number;
 }
 
 const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -51,9 +68,13 @@ const PAYMENT_METHODS = [
   { value: "other", label: "Other" },
 ];
 
-export default function DistributionsClient({ distributions, partner1Name, partner2Name, ownershipSplit, netProfit, taxReserveRate }: Props) {
+export default function DistributionsClient({ distributions, partner1Name, partner2Name, ownershipSplit, netProfit, taxReserveRate, federalTaxRate, selfEmploymentRate, seDeduction, stateTaxRate, qbiDeductionRate }: Props) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
+  const [simOpen, setSimOpen] = useState(false);
+  const [simProfit, setSimProfit] = useState(String(netProfit > 0 ? netProfit : 0));
+  const [simSplit, setSimSplit] = useState(ownershipSplit * 100);
+  const [simType, setSimType] = useState("tax_distribution");
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -79,6 +100,37 @@ export default function DistributionsClient({ distributions, partner1Name, partn
     approvedBy: false,
     notes: "",
   });
+
+  const simResults = useMemo(() => {
+    const profit = parseFloat(simProfit) || 0;
+    const splitRatio = simSplit / 100;
+
+    function calcPartner(share: number): SimPartnerResult {
+      const seTax = share * selfEmploymentRate;
+      const seDeductionAmt = seTax * seDeduction;
+      const taxableIncome = share - seDeductionAmt;
+      const qbiDeduction = taxableIncome * qbiDeductionRate;
+      const federalTax = (taxableIncome - qbiDeduction) * federalTaxRate;
+      const stTax = share * stateTaxRate;
+      const totalTax = seTax + federalTax + stTax;
+      const takeHome = share - totalTax;
+      return {
+        grossShare: share,
+        seTax,
+        seDeductionAmt,
+        taxableIncome,
+        qbiDeduction,
+        federalTax,
+        stateTax: stTax,
+        totalTax,
+        takeHome,
+      };
+    }
+
+    const p1 = calcPartner(profit * splitRatio);
+    const p2 = calcPartner(profit * (1 - splitRatio));
+    return { p1, p2, totalTax: p1.totalTax + p2.totalTax };
+  }, [simProfit, simSplit, selfEmploymentRate, seDeduction, qbiDeductionRate, federalTaxRate, stateTaxRate]);
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
@@ -338,6 +390,164 @@ export default function DistributionsClient({ distributions, partner1Name, partn
               </tr>
             </tfoot>
           </table>
+        )}
+      </div>
+
+      {/* Distribution Simulator */}
+      <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] mb-6 overflow-hidden">
+        <button
+          onClick={() => setSimOpen(!simOpen)}
+          className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-[#1A1A1E]/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E8501A]/10">
+              <svg className="h-4 w-4 text-[#E8501A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0 0 12 2.25Z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-[#FAFAFA]">Distribution Simulator</h2>
+              <p className="text-xs text-[#52525B]">Model hypothetical distributions with tax estimates</p>
+            </div>
+          </div>
+          <svg
+            className={`h-5 w-5 text-[#52525B] transition-transform duration-200 ${simOpen ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        {simOpen && (
+          <div className="border-t border-[#27272A] px-6 py-5">
+            {/* Simulator Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div>
+                <label className="block text-xs text-[#52525B] mb-1">Net Profit Amount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className={inputClasses}
+                  value={simProfit}
+                  onChange={(e) => setSimProfit(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#52525B] mb-1">
+                  Split Ratio — {partner1Name} {simSplit.toFixed(0)}% / {partner2Name} {(100 - simSplit).toFixed(0)}%
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={simSplit}
+                  onChange={(e) => setSimSplit(Number(e.target.value))}
+                  className="w-full h-2 mt-2 rounded-lg appearance-none cursor-pointer bg-[#27272A] accent-[#E8501A]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#52525B] mb-1">Distribution Type</label>
+                <select
+                  className={inputClasses}
+                  value={simType}
+                  onChange={(e) => setSimType(e.target.value)}
+                >
+                  <option value="tax_distribution">Tax Distribution</option>
+                  <option value="profit_distribution">Profit Distribution</option>
+                  <option value="owner_draw">Owner Draw</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Results Table */}
+            <div className="rounded-xl bg-[#09090B] border border-[#27272A] overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#27272A]">
+                    <th className="text-left py-3 px-4 text-[11px] uppercase tracking-wider font-medium text-[#52525B]">Line Item</th>
+                    <th className="text-right py-3 px-4 text-[11px] uppercase tracking-wider font-medium text-[#52525B]">{partner1Name}</th>
+                    <th className="text-right py-3 px-4 text-[11px] uppercase tracking-wider font-medium text-[#52525B]">{partner2Name}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#A1A1AA]">Gross Share</td>
+                    <td className="py-2.5 px-4 text-right text-[#FAFAFA] font-medium">{fmt(simResults.p1.grossShare)}</td>
+                    <td className="py-2.5 px-4 text-right text-[#FAFAFA] font-medium">{fmt(simResults.p2.grossShare)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#A1A1AA]">Self-Employment Tax ({(selfEmploymentRate * 100).toFixed(1)}%)</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p1.seTax)}</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p2.seTax)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#52525B] pl-8">SE Deduction (50%)</td>
+                    <td className="py-2.5 px-4 text-right text-[#52525B]">-{fmt(simResults.p1.seDeductionAmt)}</td>
+                    <td className="py-2.5 px-4 text-right text-[#52525B]">-{fmt(simResults.p2.seDeductionAmt)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#A1A1AA]">Taxable Income (after SE deduction)</td>
+                    <td className="py-2.5 px-4 text-right text-[#FAFAFA]">{fmt(simResults.p1.taxableIncome)}</td>
+                    <td className="py-2.5 px-4 text-right text-[#FAFAFA]">{fmt(simResults.p2.taxableIncome)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#52525B] pl-8">QBI Deduction ({(qbiDeductionRate * 100).toFixed(0)}%)</td>
+                    <td className="py-2.5 px-4 text-right text-[#52525B]">-{fmt(simResults.p1.qbiDeduction)}</td>
+                    <td className="py-2.5 px-4 text-right text-[#52525B]">-{fmt(simResults.p2.qbiDeduction)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#A1A1AA]">Federal Tax ({(federalTaxRate * 100).toFixed(0)}%)</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p1.federalTax)}</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p2.federalTax)}</td>
+                  </tr>
+                  <tr className="border-b border-[#27272A]/50">
+                    <td className="py-2.5 px-4 text-[#A1A1AA]">State Tax ({(stateTaxRate * 100).toFixed(1)}%)</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p1.stateTax)}</td>
+                    <td className="py-2.5 px-4 text-right text-red-400">{fmt(simResults.p2.stateTax)}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-[#27272A] bg-[#1A1A1E]/30">
+                    <td className="py-3 px-4 font-semibold text-[#FAFAFA]">Total Estimated Tax</td>
+                    <td className="py-3 px-4 text-right font-semibold text-red-400">{fmt(simResults.p1.totalTax)}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-red-400">{fmt(simResults.p2.totalTax)}</td>
+                  </tr>
+                  <tr className="bg-[#1A1A1E]/30">
+                    <td className="py-3 px-4 font-semibold text-[#FAFAFA]">Estimated Take-Home</td>
+                    <td className="py-3 px-4 text-right font-semibold text-green-400">{fmt(simResults.p1.takeHome)}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-green-400">{fmt(simResults.p2.takeHome)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Combined Tax Burden Summary */}
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg bg-[#1A1A1E] border border-[#27272A] px-4 py-3 text-center">
+                <p className="text-xs text-[#52525B] mb-1">Combined Tax Burden</p>
+                <p className="text-lg font-bold text-red-400">{fmt(simResults.totalTax)}</p>
+              </div>
+              <div className="rounded-lg bg-[#1A1A1E] border border-[#27272A] px-4 py-3 text-center">
+                <p className="text-xs text-[#52525B] mb-1">Effective Tax Rate</p>
+                <p className="text-lg font-bold text-[#E8501A]">
+                  {(parseFloat(simProfit) || 0) > 0
+                    ? ((simResults.totalTax / (parseFloat(simProfit) || 1)) * 100).toFixed(1)
+                    : "0.0"}%
+                </p>
+              </div>
+              <div className="rounded-lg bg-[#1A1A1E] border border-[#27272A] px-4 py-3 text-center sm:col-span-1 col-span-2">
+                <p className="text-xs text-[#52525B] mb-1">Combined Take-Home</p>
+                <p className="text-lg font-bold text-green-400">{fmt(simResults.p1.takeHome + simResults.p2.takeHome)}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#52525B] mt-4">
+              * Estimates only. Actual tax liability depends on total annual income, deductions, filing status, and other factors.
+            </p>
+          </div>
         )}
       </div>
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 
 const navSections = [
   {
@@ -37,6 +38,15 @@ const navSections = [
         icon: (
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M2.25 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v11.25m-19.5 0A2.25 2.25 0 0 0 4.5 21h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v-2.25m19.5 0v2.25" />
+          </svg>
+        ),
+      },
+      {
+        name: "Calendar",
+        href: "/calendar",
+        icon: (
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M2.25 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v11.25m-19.5 0A2.25 2.25 0 0 0 4.5 21h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v-2.25m19.5 0v2.25M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-9 8h6m-5 4h4" />
           </svg>
         ),
       },
@@ -139,10 +149,10 @@ export default function Sidebar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-150 ${
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-[color,background-color,border-color] duration-150 ${
                     active
                       ? "border-l-[3px] border-[#E8501A] bg-[#1A1A1E] text-white"
-                      : "border-l-[3px] border-transparent text-[#A1A1AA] hover:bg-[#1A1A1E] hover:text-[#FAFAFA]"
+                      : "border-l-[3px] border-transparent text-[#A1A1AA] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#1A1A1E] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#FAFAFA]"
                   }`}
                 >
                   <span className={active ? "text-[#E8501A]" : ""}>{item.icon}</span>
@@ -153,6 +163,11 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
+
+      {/* Notifications */}
+      <div className="border-t border-[#27272A] px-5 py-3">
+        <NotificationBell />
+      </div>
 
       {/* User avatars */}
       <div className="border-t border-[#27272A] px-5 py-4">

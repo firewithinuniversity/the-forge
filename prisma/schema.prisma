@@ -139,6 +139,7 @@ model TaxConfig {
   taxReserveRate      Float  @default(0.30)
   partner1Name        String @default("Brett Breunig")
   partner2Name        String @default("Jude Begay")
+  burnRateThreshold   Float  @default(5000)  // Monthly expense warning threshold
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -191,4 +192,45 @@ model Distribution {
   updatedAt    DateTime  @updatedAt
 
   @@index([date])
+}
+
+// ── Notifications (in-app alerts) ──────────────────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // "deadline" | "overdue" | "burn_rate" | "milestone" | "auto_transaction"
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  dismissed Boolean  @default(false)
+  link      String?  // Optional deep-link path
+  createdAt DateTime @default(now())
+
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ── Project Templates ──────────────────────────────────────────────────────
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#E8501A")
+  phases      String   @default("[]") // JSON: [{name, order}]
+  tasks       String   @default("[]") // JSON: [{title, description, priority, phaseName}]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Audit Trail ────────────────────────────────────────────────────────────
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  String   // "transaction" | "distribution" | "project" | "tax_payment"
+  entityId    String
+  action      String   // "create" | "update" | "delete"
+  changes     String   @default("{}") // JSON: {field: {old, new}}
+  performedBy String?  // "Brett" | "Jude" | "System"
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

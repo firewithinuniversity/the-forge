@@ -7,6 +7,7 @@ import KanbanBoard from "@/app/components/KanbanBoard";
 import Button from "@/app/components/ui/Button";
 import Badge from "@/app/components/ui/Badge";
 import Modal from "@/app/components/ui/Modal";
+import Input from "@/app/components/ui/Input";
 import type { TaskData } from "@/app/components/TaskCard";
 
 interface Phase {
@@ -61,6 +62,13 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
+
+  // Save as template state
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
 
   const refreshProject = useCallback(async () => {
     try {
@@ -130,6 +138,36 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
     finally { setArchiving(false); }
   }
 
+  function openSaveTemplateModal() {
+    setTemplateName(project.name + " Template");
+    setTemplateDescription(project.description || "");
+    setTemplateSaved(false);
+    setShowSaveTemplate(true);
+  }
+
+  async function handleSaveAsTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    try {
+      const res = await fetch("/api/project-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromProjectId: project.id,
+          name: templateName.trim(),
+          description: templateDescription.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save template");
+      setTemplateSaved(true);
+    } catch {
+      // silently handle
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
   const totalTasks = project.tasks.length;
   const doneTasks = project.tasks.filter((t) => t.status === "done").length;
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
@@ -195,11 +233,19 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
               </button>
             </>
           ) : (
-            <button onClick={() => setShowArchiveModal(true)} className="rounded-lg p-2 text-[#52525B] hover:bg-amber-500/10 hover:text-amber-400 transition-colors" title="Archive project">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-              </svg>
-            </button>
+            <>
+              <Button size="sm" variant="secondary" onClick={openSaveTemplateModal}>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                Save as Template
+              </Button>
+              <button onClick={() => setShowArchiveModal(true)} className="rounded-lg p-2 text-[#52525B] hover:bg-amber-500/10 hover:text-amber-400 transition-colors" title="Archive project">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                </svg>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -325,6 +371,68 @@ export default function ProjectDetailClient({ project: initialProject }: { proje
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Save as Template Modal */}
+      <Modal open={showSaveTemplate} onClose={() => setShowSaveTemplate(false)} title="Save as Template">
+        {templateSaved ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-green-500/30 bg-green-500/5 px-4 py-3">
+              <div className="flex items-start gap-3">
+                <svg className="h-5 w-5 text-green-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-green-400">Template saved</p>
+                  <p className="text-xs text-[#A1A1AA] mt-1">
+                    &quot;{templateName}&quot; has been saved with {project.phases.length} phase{project.phases.length !== 1 ? "s" : ""} and {project.tasks.length} task{project.tasks.length !== 1 ? "s" : ""}.
+                    You can find it in the Templates tab on the Projects page.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={() => setShowSaveTemplate(false)}>Close</Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveAsTemplate} className="space-y-4">
+            <p className="text-xs text-[#A1A1AA]">
+              Save this project&#39;s structure as a reusable template. Phases and tasks will be saved, but task statuses, assignees, and dates will not be included.
+            </p>
+            <Input
+              label="Template name"
+              id="tname"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g. Website Redesign Template"
+              autoFocus
+            />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-[#A1A1AA]">Description</label>
+              <textarea
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="Brief description of this template..."
+                rows={3}
+                className="w-full rounded-lg bg-[#0F0F11] border border-[#27272A] px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#52525B] focus:border-[#E8501A] focus:ring-1 focus:ring-[#E8501A]/30 focus:outline-none transition-colors resize-none"
+              />
+            </div>
+            <div className="rounded-lg bg-[#09090B] border border-[#27272A] px-4 py-3">
+              <p className="text-xs text-[#52525B] mb-2">Template will include:</p>
+              <div className="flex items-center gap-3">
+                <Badge>{project.phases.length} phase{project.phases.length !== 1 ? "s" : ""}</Badge>
+                <Badge>{project.tasks.length} task{project.tasks.length !== 1 ? "s" : ""}</Badge>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" type="button" onClick={() => setShowSaveTemplate(false)}>Cancel</Button>
+              <Button type="submit" disabled={savingTemplate || !templateName.trim()}>
+                {savingTemplate ? "Saving..." : "Save Template"}
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );

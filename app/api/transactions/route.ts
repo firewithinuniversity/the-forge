@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
+import {
+  ValidationError,
+  requireString,
+  requireNumber,
+  validateEnum,
+  optionalString,
+  optionalBoolean,
+  optionalEnum,
+  maxLength,
+} from "@/lib/validate";
 
 export async function GET(request: Request) {
   try {
@@ -36,38 +47,53 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { type, amount, description, category, date, projectId, recurring, notes, receiptSaved, taxDeductible } = body;
 
-    if (!type || (type !== "income" && type !== "expense")) {
-      return NextResponse.json({ error: "Type must be 'income' or 'expense'" }, { status: 400 });
+    // ── Input validation ────────────────────────────────────────────────
+    const type = validateEnum(body.type, ["income", "expense"], "type");
+    const amount = requireNumber(body.amount, "amount");
+    const description = maxLength(requireString(body.description, "description"), 500, "description");
+    const category = requireString(body.category, "category");
+
+    const date = body.date ? new Date(body.date) : new Date();
+    if (body.date && isNaN(date.getTime())) {
+      return NextResponse.json({ error: "date is not a valid date" }, { status: 400 });
     }
-    if (!amount || typeof amount !== "number" || amount <= 0) {
-      return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 });
-    }
-    if (!description || typeof description !== "string" || !description.trim()) {
-      return NextResponse.json({ error: "Description is required" }, { status: 400 });
-    }
-    if (!category || typeof category !== "string") {
-      return NextResponse.json({ error: "Category is required" }, { status: 400 });
-    }
+
+    const projectId = optionalString(body.projectId, "projectId") || null;
+    const recurring = optionalBoolean(body.recurring, "recurring") ?? false;
+    const notes = optionalString(body.notes, "notes") ?? null;
+    const receiptSaved = optionalBoolean(body.receiptSaved, "receiptSaved") ?? false;
+    const taxDeductible = optionalEnum(
+      body.taxDeductible,
+      ["yes", "no", "partial", "unknown"],
+      "taxDeductible"
+    ) ?? "unknown";
+    // ── End validation ──────────────────────────────────────────────────
 
     const transaction = await prisma.transaction.create({
       data: {
         type,
         amount,
-        description: description.trim(),
+        description,
         category,
-        date: date ? new Date(date) : new Date(),
-        projectId: projectId || null,
-        recurring: recurring || false,
-        notes: notes?.trim() || null,
-        receiptSaved: receiptSaved || false,
-        taxDeductible: taxDeductible || "unknown",
+        date,
+        projectId,
+        recurring,
+        notes,
+        receiptSaved,
+        taxDeductible,
       },
+    });
+
+    logAudit("transaction", transaction.id, "create", {
+      type, amount, description, category,
     });
 
     return NextResponse.json(transaction, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/transactions error:", error);
     return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });
   }

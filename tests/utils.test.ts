@@ -142,7 +142,7 @@ describe("valueColor", () => {
   });
 
   it("returns gray class for zero", () => {
-    expect(valueColor(0)).toBe("text-[#606070]");
+    expect(valueColor(0)).toBe("text-[#52525B]");
   });
 
   it("accepts custom positive color", () => {

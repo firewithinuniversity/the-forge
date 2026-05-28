@@ -58,6 +58,8 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [autoCreating, setAutoCreating] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ service: "", category: "", monthlyCost: "", annualCost: "", billingCycle: "monthly", nextDueDate: "", notes: "" });
@@ -65,6 +67,32 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
   const activeExpenses = expenses.filter((e) => e.active);
   const totalMonthly = activeExpenses.reduce((s, e) => s + e.monthlyCost, 0);
   const totalAnnual = activeExpenses.reduce((s, e) => s + (e.annualCost || e.monthlyCost * 12), 0);
+
+  // Count expenses that are due (nextDueDate <= today)
+  const dueCount = expenses.filter((e) => {
+    if (!e.active || !e.nextDueDate) return false;
+    const due = new Date(e.nextDueDate);
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    return due <= now;
+  }).length;
+
+  async function autoCreateDue() {
+    setAutoCreating(true);
+    setToast(null);
+    try {
+      const res = await fetch("/api/recurring-expenses/auto-create", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to auto-create");
+      setToast({ type: "success", message: `Created ${data.count} recurring transaction(s)` });
+      router.refresh();
+    } catch (err) {
+      setToast({ type: "error", message: err instanceof Error ? err.message : "Failed to auto-create transactions" });
+    } finally {
+      setAutoCreating(false);
+      setTimeout(() => setToast(null), 5000);
+    }
+  }
 
   const filteredExpenses = statusFilter === "all" ? expenses : expenses.filter((e) => getServiceStatus(e) === statusFilter);
 
@@ -172,14 +200,43 @@ export default function RecurringClient({ expenses, categories }: { expenses: Re
         title="Recurring Expenses"
         description="Monthly subscriptions and fixed costs for Fire Within University"
         actions={
-          <Button size="sm" onClick={() => setShowAdd(true)}>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Add Expense
-          </Button>
+          <>
+            <Button size="sm" variant="secondary" onClick={autoCreateDue} disabled={dueCount === 0 || autoCreating} className="relative">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+              </svg>
+              {autoCreating ? "Creating..." : "Auto-Create Due"}
+              {dueCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-[#E8501A] text-[10px] font-bold text-white px-1">
+                  {dueCount}
+                </span>
+              )}
+            </Button>
+            <Button size="sm" onClick={() => setShowAdd(true)}>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add Expense
+            </Button>
+          </>
         }
       />
+
+      {/* Toast */}
+      {toast && (
+        <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm flex items-center justify-between ${
+          toast.type === "success"
+            ? "border-green-500/30 bg-green-500/10 text-green-400"
+            : "border-red-500/30 bg-red-500/10 text-red-400"
+        }`}>
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-3 text-current opacity-60 hover:opacity-100 transition-opacity">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Summary strip */}
       <div className="grid grid-cols-3 gap-4 mb-6">

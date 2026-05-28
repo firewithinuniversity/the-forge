@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  ValidationError,
+  requireString,
+  optionalString,
+  optionalBoolean,
+  optionalEnum,
+  maxLength,
+} from "@/lib/validate";
 
 export async function GET(request: Request) {
   try {
@@ -28,25 +36,36 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, content, projectId, transactionId, pinned, category } = body;
 
-    if (!content || typeof content !== "string" || content.trim().length === 0) {
-      return NextResponse.json({ error: "Note content is required" }, { status: 400 });
-    }
+    // ── Input validation ────────────────────────────────────────────────
+    const content = maxLength(requireString(body.content, "content"), 10000, "content");
+    const title = optionalString(body.title, "title") ?? "";
+    const projectId = optionalString(body.projectId, "projectId") || null;
+    const transactionId = optionalString(body.transactionId, "transactionId") || null;
+    const pinned = optionalBoolean(body.pinned, "pinned") ?? false;
+    const category = optionalEnum(
+      body.category,
+      ["General", "Meeting Notes", "Tax Notes", "Legal", "Ideas", "Ministry"],
+      "category"
+    ) ?? "General";
+    // ── End validation ──────────────────────────────────────────────────
 
     const note = await prisma.note.create({
       data: {
-        title: title?.trim() || "",
-        content: content.trim(),
-        projectId: projectId || null,
-        transactionId: transactionId || null,
-        pinned: pinned || false,
-        category: category || "General",
+        title,
+        content,
+        projectId,
+        transactionId,
+        pinned,
+        category,
       },
     });
 
     return NextResponse.json(note, { status: 201 });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/notes error:", error);
     return NextResponse.json({ error: "Failed to create note" }, { status: 500 });
   }
