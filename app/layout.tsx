@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import MainContent from "./components/MainContent";
+import SearchModal from "./components/SearchModal";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="h-full bg-[#09090B] text-[#FAFAFA]">
         <Sidebar />
+        <SearchModal />
         <MainContent>
           {children}
         </MainContent>

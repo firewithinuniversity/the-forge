@@ -15,7 +15,7 @@ async function getDashboardData() {
   const startOfPrevMonth = new Date(year, now.getMonth() - 1, 1);
   const endOfPrevMonth = new Date(year, now.getMonth(), 0, 23, 59, 59, 999);
 
-  const [projects, recentTasks, monthlyTx, prevMonthTx, yearTx, yearAllTx, recentTransactions, recentDistributions] = await Promise.all([
+  const [projects, recentTasks, monthlyTx, prevMonthTx, yearTx, yearAllTx, recentTransactions, recentDistributions, overdueTasks, last6MonthsTx] = await Promise.all([
     prisma.project.findMany({
       where: { archived: false },
       orderBy: { updatedAt: "desc" },
@@ -55,6 +55,21 @@ async function getDashboardData() {
       orderBy: { createdAt: "desc" },
       take: 3,
       select: { id: true, llcNetProfit: true, type: true, createdAt: true },
+    }),
+    // Overdue tasks: past due, not done
+    prisma.task.findMany({
+      where: {
+        dueDate: { lt: now },
+        status: { not: "done" },
+      },
+      orderBy: { dueDate: "asc" },
+      take: 5,
+      include: { project: { select: { id: true, name: true, color: true } } },
+    }),
+    // Last 6 months of transactions for cash flow trend
+    prisma.transaction.findMany({
+      where: { date: { gte: new Date(year, now.getMonth() - 5, 1) } },
+      select: { type: true, amount: true, date: true },
     }),
   ]);
 
@@ -104,6 +119,44 @@ async function getDashboardData() {
   ];
   const nextDeadline = deadlines.find((d) => d.date >= now) || deadlines[0];
   const daysUntilDeadline = Math.ceil((nextDeadline.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Next 3 upcoming deadlines
+  const upcomingDeadlines = deadlines
+    .filter((d) => d.date >= now)
+    .slice(0, 3)
+    .map((d) => ({
+      name: d.name,
+      date: d.date.toISOString(),
+      daysAway: Math.ceil((d.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    }));
+
+  // Overdue tasks formatted
+  const overdueItems = overdueTasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    projectName: t.project.name,
+    projectId: t.project.id,
+    projectColor: t.project.color,
+    daysOverdue: Math.ceil((now.getTime() - new Date(t.dueDate!).getTime()) / (1000 * 60 * 60 * 24)),
+    priority: t.priority,
+  }));
+
+  // Cash flow trend — last 6 months
+  const cashFlowMonths: { month: string; income: number; expenses: number; net: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const m = new Date(year, now.getMonth() - i, 1);
+    const mEnd = new Date(year, now.getMonth() - i + 1, 0, 23, 59, 59, 999);
+    const label = m.toLocaleDateString("en-US", { month: "short" });
+    let income = 0, expenses = 0;
+    for (const tx of last6MonthsTx) {
+      const txDate = new Date(tx.date);
+      if (txDate >= m && txDate <= mEnd) {
+        if (tx.type === "income") income += tx.amount;
+        else expenses += tx.amount;
+      }
+    }
+    cashFlowMonths.push({ month: label, income: Math.round(income * 100) / 100, expenses: Math.round(expenses * 100) / 100, net: Math.round((income - expenses) * 100) / 100 });
+  }
 
   const projectCards = projects.map((p) => {
     const statusCounts = { todo: 0, in_progress: 0, review: 0, done: 0 };
@@ -168,6 +221,7 @@ async function getDashboardData() {
     profitMargin, ytdProfitMargin, ytdIncome,
     donationCount, avgDonation, daysUntilDeadline, nextDeadlineName: nextDeadline.name,
     projectCards, activity: activity.slice(0, 10),
+    upcomingDeadlines, overdueItems, cashFlowMonths,
   };
 }
 
@@ -271,6 +325,112 @@ export default async function Home() {
           <p className={`text-[10px] mt-0.5 ${data.ytdProfitMargin >= 0 ? "text-[#22C55E]/70" : "text-[#EF4444]/70"}`}>
             YTD: {data.ytdIncome === 0 ? "—" : `${data.ytdProfitMargin.toFixed(1)}%`}
           </p>
+        </div>
+      </div>
+
+      {/* Alerts Row: Overdue Tasks + Upcoming Deadlines + Cash Flow */}
+      <div className="grid lg:grid-cols-3 gap-4 mb-8">
+        {/* Overdue Tasks */}
+        <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <h3 className="text-xs font-semibold text-[#FAFAFA]">Overdue Tasks</h3>
+            {data.overdueItems.length > 0 && (
+              <span className="ml-auto rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
+                {data.overdueItems.length}
+              </span>
+            )}
+          </div>
+          {data.overdueItems.length === 0 ? (
+            <p className="text-xs text-[#52525B] py-2">All caught up!</p>
+          ) : (
+            <div className="space-y-2">
+              {data.overdueItems.map((task) => (
+                <Link
+                  key={task.id}
+                  href={`/projects/${task.projectId}`}
+                  className="flex items-start gap-2 rounded-lg px-2 py-1.5 -mx-2 hover:bg-[#1A1A1E] transition-colors"
+                >
+                  <div className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: task.projectColor }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-[#FAFAFA] truncate">{task.title}</p>
+                    <p className="text-[10px] text-[#52525B]">{task.projectName}</p>
+                  </div>
+                  <span className="text-[10px] text-red-400 shrink-0">{task.daysOverdue}d late</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Upcoming Deadlines */}
+        <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M2.25 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v11.25m-19.5 0A2.25 2.25 0 0 0 4.5 21h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v-2.25" />
+            </svg>
+            <h3 className="text-xs font-semibold text-[#FAFAFA]">Upcoming Deadlines</h3>
+          </div>
+          {data.upcomingDeadlines.length === 0 ? (
+            <p className="text-xs text-[#52525B] py-2">No upcoming deadlines</p>
+          ) : (
+            <div className="space-y-2.5">
+              {data.upcomingDeadlines.map((dl, i) => {
+                const dlColor = dl.daysAway < 15 ? "text-red-400" : dl.daysAway <= 30 ? "text-amber-400" : "text-green-400";
+                return (
+                  <div key={i} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-[#FAFAFA]">{dl.name}</p>
+                      <p className="text-[10px] text-[#52525B]">
+                        {new Date(dl.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-bold tabular-nums ${dlColor}`}>{dl.daysAway}d</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Cash Flow Trend */}
+        <div className="rounded-xl bg-[#0F0F11] border border-[#27272A] p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="h-4 w-4 text-[#E8501A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+            </svg>
+            <h3 className="text-xs font-semibold text-[#FAFAFA]">Cash Flow (6 months)</h3>
+          </div>
+          {(() => {
+            const months = data.cashFlowMonths;
+            const maxVal = Math.max(...months.map((m) => Math.max(m.income, m.expenses)), 1);
+            return (
+              <div className="space-y-2">
+                {months.map((m) => (
+                  <div key={m.month} className="flex items-center gap-2">
+                    <span className="w-8 text-[10px] text-[#52525B] tabular-nums">{m.month}</span>
+                    <div className="flex-1 flex flex-col gap-0.5">
+                      <div className="h-1.5 rounded-full bg-[#1A1A1E]">
+                        <div className="h-full rounded-full bg-[#22C55E] transition-[width] duration-300" style={{ width: `${(m.income / maxVal) * 100}%` }} />
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#1A1A1E]">
+                        <div className="h-full rounded-full bg-[#EF4444] transition-[width] duration-300" style={{ width: `${(m.expenses / maxVal) * 100}%` }} />
+                      </div>
+                    </div>
+                    <span className={`w-16 text-right text-[10px] font-medium tabular-nums ${m.net >= 0 ? "text-[#22C55E]" : "text-[#EF4444]"}`}>
+                      {m.net >= 0 ? "+" : ""}{formatCurrency(m.net)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 pt-1 text-[10px] text-[#52525B]">
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-3 rounded-full bg-[#22C55E]" />Income</span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-3 rounded-full bg-[#EF4444]" />Expenses</span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

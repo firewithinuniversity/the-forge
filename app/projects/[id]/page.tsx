@@ -11,7 +11,16 @@ async function getProject(id: string) {
     where: { id },
     include: {
       phases: { orderBy: { order: "asc" } },
-      tasks: { orderBy: [{ order: "asc" }, { createdAt: "desc" }] },
+      tasks: {
+        include: {
+          subtasks: {
+            select: { id: true, completed: true },
+            orderBy: { order: "asc" },
+          },
+          _count: { select: { comments: true } },
+        },
+        orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      },
       notes: { orderBy: { updatedAt: "desc" } },
     },
   });
@@ -36,6 +45,8 @@ async function getProject(id: string) {
       dueDate: t.dueDate?.toISOString() || null,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
+      subtasks: t.subtasks,
+      _count: t._count,
     })),
     notes: project.notes.map((n) => ({
       ...n,

@@ -57,11 +57,41 @@ model Task {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  phase   Phase?  @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase     Phase?     @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  subtasks  Subtask[]
+  comments  Comment[]
 
   @@index([projectId])
   @@index([status])
+}
+
+// ── Subtasks (checklists within a task) ────────────────────────────────────
+model Subtask {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  taskId    String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// ── Comments (activity thread on a task) ───────────────────────────────────
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  author    String   @default("Brett") // "Brett" | "Jude"
+  taskId    String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([createdAt])
 }
 
 // ── Notes (freeform notes on a project) ─────────────────────────────────────
@@ -92,6 +122,9 @@ model Transaction {
   recurring      Boolean  @default(false)
   notes          String?
   receiptSaved   Boolean  @default(false)
+  receiptData    String?  // base64-encoded file
+  receiptName    String?  // original filename
+  receiptType    String?  // MIME type e.g. image/png, application/pdf
   taxDeductible  String   @default("unknown") // "yes" | "no" | "partial" | "unknown"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -178,6 +211,20 @@ model RecurringExpense {
   updatedAt    DateTime  @updatedAt
 }
 
+// ── Finance: Recurring Income ──────────────────────────────────────────────
+model RecurringIncome {
+  id           String    @id @default(cuid())
+  source       String
+  category     String
+  amount       Float
+  frequency    String    @default("monthly") // "weekly" | "monthly" | "annual"
+  nextDueDate  DateTime?
+  active       Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
 // ── Finance: Distributions ─────────────────────────────────────────────────
 model Distribution {
   id           String    @id @default(cuid())
@@ -232,6 +279,7 @@ model CalendarEvent {
   endDate     DateTime?
   allDay      Boolean  @default(false)
   color       String   @default("#E8501A")
+  recurrence  String?  // null | "daily" | "weekly" | "biweekly" | "monthly" | "yearly"
   projectId   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

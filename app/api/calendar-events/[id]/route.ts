@@ -80,6 +80,11 @@ export async function PATCH(
     if (body.projectId !== undefined) {
       data.projectId = body.projectId === null ? null : optionalString(body.projectId, "projectId");
     }
+    if (body.recurrence !== undefined) {
+      data.recurrence = body.recurrence === null
+        ? null
+        : optionalEnum(body.recurrence, ["daily", "weekly", "biweekly", "monthly", "yearly"], "recurrence") ?? null;
+    }
 
     const updated = await prisma.calendarEvent.update({
       where: { id },

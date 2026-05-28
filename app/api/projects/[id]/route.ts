@@ -19,6 +19,13 @@ export async function GET(
       include: {
         phases: { orderBy: { order: "asc" } },
         tasks: {
+          include: {
+            subtasks: {
+              select: { id: true, completed: true },
+              orderBy: { order: "asc" },
+            },
+            _count: { select: { comments: true } },
+          },
           orderBy: [{ order: "asc" }, { createdAt: "desc" }],
         },
         notes: { orderBy: { updatedAt: "desc" } },

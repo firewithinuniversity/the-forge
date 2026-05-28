@@ -83,6 +83,15 @@ const navSections = [
         ),
       },
       {
+        name: "Income",
+        href: "/finance/recurring-income",
+        icon: (
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+          </svg>
+        ),
+      },
+      {
         name: "Distributions",
         href: "/finance/distributions",
         icon: (
@@ -153,6 +162,24 @@ export default function Sidebar() {
           <h1 className="text-sm font-semibold tracking-tight text-[#FAFAFA]">The Forge</h1>
           <p className="text-[11px] text-[#52525B]">Fire Within University</p>
         </div>
+      </div>
+
+      {/* Search shortcut */}
+      <div className="px-3 mb-2">
+        <button
+          onClick={() => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }));
+          }}
+          className="flex items-center gap-3 w-full rounded-lg border border-[#27272A] bg-[#09090B] px-3 py-2 text-sm text-[#52525B] [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#3F3F46] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[#A1A1AA] transition-colors"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="hidden sm:inline-flex items-center rounded border border-[#27272A] px-1.5 py-0.5 text-[10px] font-medium">
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       {/* Nav */}

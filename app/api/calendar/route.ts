@@ -13,6 +13,7 @@ export interface CalendarEvent {
   paid?: boolean;
   calendarEventId?: string; // DB id for custom events (editable)
   description?: string | null;
+  recurrence?: string | null; // "daily" | "weekly" | "biweekly" | "monthly" | "yearly"
 }
 
 // GET /api/calendar?month=MM&year=YYYY
@@ -166,7 +167,80 @@ export async function getCalendarEvents(month: number, year: number): Promise<Ca
       projectId: ce.projectId ?? undefined,
       calendarEventId: ce.id,
       description: ce.description,
+      recurrence: ce.recurrence ?? null,
     });
+  }
+
+  // 7. Generate recurring calendar event instances
+  // Fetch all calendar events with recurrence (even outside range — the base may be before the window)
+  const recurringCalendarEvents = await prisma.calendarEvent.findMany({
+    where: {
+      recurrence: { not: null },
+    },
+    include: { project: { select: { color: true } } },
+  });
+
+  for (const rce of recurringCalendarEvents) {
+    if (!rce.recurrence) continue;
+    const baseDate = new Date(rce.date);
+    const duration = rce.endDate ? rce.endDate.getTime() - rce.date.getTime() : 0;
+
+    // Generate instances within the visible range
+    // Start from the base date and step forward
+    let current = new Date(baseDate);
+
+    // Safety: limit to 400 iterations to prevent infinite loops
+    for (let i = 0; i < 400; i++) {
+      // If we've gone past the visible range, stop
+      if (current > rangeEnd) break;
+
+      // If the instance is within range and is NOT the original base date (already added above),
+      // add it as a recurring instance
+      if (current >= rangeStart && current <= rangeEnd) {
+        const isoDate = current.toISOString();
+        // Skip the base event — it was already added in section 6
+        if (isoDate !== rce.date.toISOString()) {
+          const instanceEndDate = duration > 0 ? new Date(current.getTime() + duration) : null;
+          events.push({
+            type: rce.type as CalendarEvent["type"],
+            title: rce.title,
+            date: isoDate,
+            endDate: instanceEndDate?.toISOString() ?? null,
+            allDay: rce.allDay,
+            color: rce.color || rce.project?.color || "#E8501A",
+            projectId: rce.projectId ?? undefined,
+            calendarEventId: rce.id,
+            description: rce.description,
+            recurrence: rce.recurrence,
+          });
+        }
+      }
+
+      // Advance to the next occurrence
+      const next = new Date(current);
+      switch (rce.recurrence) {
+        case "daily":
+          next.setDate(next.getDate() + 1);
+          break;
+        case "weekly":
+          next.setDate(next.getDate() + 7);
+          break;
+        case "biweekly":
+          next.setDate(next.getDate() + 14);
+          break;
+        case "monthly":
+          next.setMonth(next.getMonth() + 1);
+          break;
+        case "yearly":
+          next.setFullYear(next.getFullYear() + 1);
+          break;
+        default:
+          // Unknown recurrence — stop
+          i = 400;
+          break;
+      }
+      current = next;
+    }
   }
 
   return events;

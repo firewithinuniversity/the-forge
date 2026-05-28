@@ -7,6 +7,7 @@ import {
   optionalString,
   optionalDate,
   optionalBoolean,
+  optionalEnum,
   validateEnum,
   maxLength,
 } from "@/lib/validate";
@@ -63,6 +64,11 @@ export async function POST(request: Request) {
       throw new ValidationError("color must be a valid hex color (e.g. #FF00AA)");
     }
     const projectId = optionalString(body.projectId, "projectId") || null;
+    const recurrence = optionalEnum(
+      body.recurrence,
+      ["daily", "weekly", "biweekly", "monthly", "yearly"],
+      "recurrence"
+    ) ?? null;
 
     const event = await prisma.calendarEvent.create({
       data: {
@@ -74,6 +80,7 @@ export async function POST(request: Request) {
         allDay,
         color,
         projectId,
+        recurrence,
       },
       include: { project: { select: { id: true, name: true, color: true } } },
     });

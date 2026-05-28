@@ -16,6 +16,7 @@ interface CalendarEvent {
   paid?: boolean;
   calendarEventId?: string;
   description?: string | null;
+  recurrence?: string | null;
 }
 
 interface ProjectOption {
@@ -296,6 +297,7 @@ export default function CalendarClient({ initialEvents, initialMonth, initialYea
     allDay: boolean;
     color: string;
     projectId: string;
+    recurrence: string;
     reminderEnabled?: boolean;
     reminderOffset?: number; // minutes before event
   }) => {
@@ -314,6 +316,7 @@ export default function CalendarClient({ initialEvents, initialMonth, initialYea
             allDay: data.allDay,
             color: data.color,
             projectId: data.projectId || null,
+            recurrence: data.recurrence || null,
           }),
         });
         if (!res.ok) {
@@ -335,6 +338,7 @@ export default function CalendarClient({ initialEvents, initialMonth, initialYea
             allDay: data.allDay,
             color: data.color,
             projectId: data.projectId || null,
+            recurrence: data.recurrence || null,
           }),
         });
         if (!res.ok) {
@@ -614,6 +618,7 @@ function EventForm({
     allDay: boolean;
     color: string;
     projectId: string;
+    recurrence: string;
     reminderEnabled?: boolean;
     reminderOffset?: number;
   }) => void;
@@ -649,6 +654,7 @@ function EventForm({
   const [allDay, setAllDay] = useState(editingEvent?.allDay || false);
   const [color, setColor] = useState(editingEvent?.color || EVENT_TYPE_COLORS[editingEvent?.type || "meeting"] || "#3B82F6");
   const [projectId, setProjectId] = useState(editingEvent?.projectId || "");
+  const [recurrence, setRecurrence] = useState(editingEvent?.recurrence || "");
   const [saving, setSaving] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderOffset, setReminderOffset] = useState(15); // minutes before
@@ -680,6 +686,7 @@ function EventForm({
       allDay,
       color,
       projectId,
+      recurrence,
       reminderEnabled: reminderEnabled && eventDateInFuture,
       reminderOffset,
     });
@@ -802,6 +809,25 @@ function EventForm({
             {projects.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
+          </select>
+        </div>
+
+        {/* Repeat / Recurrence */}
+        <div>
+          <label className="block text-[10px] font-medium text-[#52525B] uppercase tracking-wider mb-1">
+            Repeat
+          </label>
+          <select
+            value={recurrence}
+            onChange={(e) => setRecurrence(e.target.value)}
+            className="w-full rounded-lg border border-[#27272A] bg-[#09090B] px-2 py-1.5 text-xs text-[#FAFAFA] focus:border-[#E8501A] focus:outline-none transition-colors [color-scheme:dark]"
+          >
+            <option value="">None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
           </select>
         </div>
 
@@ -968,6 +994,7 @@ function MonthView({
                   >
                     <span className="hidden sm:inline">
                       {event.calendarEventId && <span className="mr-0.5">{getEventIcon(event.type)}</span>}
+                      {event.recurrence && <span className="mr-0.5" title={`Repeats ${event.recurrence}`}>&#x1F501;</span>}
                       {event.title}
                     </span>
                     <span className="sm:hidden inline-block w-full h-1 rounded-full" style={{ backgroundColor: getEventColor(event) }} />
@@ -1055,10 +1082,12 @@ function WeekView({
                     >
                       <div className="font-medium truncate" style={{ color: getEventColor(event) }}>
                         {event.calendarEventId && <span className="mr-0.5">{getEventIcon(event.type)}</span>}
+                        {event.recurrence && <span className="mr-0.5" title={`Repeats ${event.recurrence}`}>&#x1F501;</span>}
                         {event.title}
                       </div>
                       <div className="text-[10px] text-[#52525B] mt-0.5">
                         {getEventLabel(event)}
+                        {event.recurrence && ` (${event.recurrence})`}
                         {event.type === "task" && event.status === "done" && " (done)"}
                         {event.type === "tax" && event.paid && " (paid)"}
                         {event.endDate && !event.allDay && (
@@ -1211,6 +1240,7 @@ function DetailPanel({
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-[#FAFAFA] truncate">
                         {isCustom && <span className="mr-1">{getEventIcon(event.type)}</span>}
+                        {event.recurrence && <span className="mr-1" title={`Repeats ${event.recurrence}`}>&#x1F501;</span>}
                         {event.title}
                       </div>
                       {event.description && (
@@ -1245,6 +1275,11 @@ function DetailPanel({
                         )}
                         {isCustom && event.allDay && (
                           <span className="text-[10px] text-[#52525B]">All day</span>
+                        )}
+                        {event.recurrence && (
+                          <span className="text-[10px] text-[#52525B] capitalize">
+                            Repeats {event.recurrence}
+                          </span>
                         )}
                       </div>
                     </div>
