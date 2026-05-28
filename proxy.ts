@@ -8,8 +8,31 @@ function makeToken(password: string): string {
     .digest("hex");
 }
 
+/* ── Known bot User-Agent patterns ── */
+const BOT_PATTERNS = [
+  /bot/i, /crawl/i, /spider/i, /scrape/i, /scan/i,
+  /curl/i, /wget/i, /python-requests/i, /httpx/i,
+  /go-http-client/i, /java\//i, /libwww/i, /headless/i,
+];
+
+function isBot(ua: string | null): boolean {
+  if (!ua) return true; // No user-agent = suspicious
+  return BOT_PATTERNS.some((p) => p.test(ua));
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Allow robots.txt through (so bots read the "Disallow: /" rule)
+  if (pathname === "/robots.txt") {
+    return NextResponse.next();
+  }
+
+  // Block bots on all non-public paths
+  const userAgent = request.headers.get("user-agent");
+  if (isBot(userAgent) && pathname !== "/login" && !pathname.startsWith("/_next")) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
 
   // Skip auth for login page, static assets, and auth API routes
   if (
@@ -45,9 +68,14 @@ export function proxy(request: NextRequest) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
   response.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()"
+  );
+  response.headers.set(
+    "Content-Security-Policy",
+    "frame-ancestors 'none'"
   );
   return response;
 }
