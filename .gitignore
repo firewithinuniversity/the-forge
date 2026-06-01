@@ -48,3 +48,7 @@ dev.db-journal
 
 # claude code
 .claude/
+
+# cloudflare
+.open-next/
+.wrangler/
