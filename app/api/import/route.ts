@@ -12,6 +12,8 @@ interface ImportPayload {
     projects?: unknown[];
     phases?: unknown[];
     tasks?: unknown[];
+    subtasks?: unknown[];
+    comments?: unknown[];
     notes?: unknown[];
     transactions?: unknown[];
     categories?: unknown[];
@@ -19,8 +21,10 @@ interface ImportPayload {
     taxConfig?: unknown | null;
     taxPayments?: unknown[];
     recurringExpenses?: unknown[];
+    recurringIncome?: unknown[];
     distributions?: unknown[];
     notifications?: unknown[];
+    reminders?: unknown[];
     projectTemplates?: unknown[];
     auditLogs?: unknown[];
     calendarEvents?: unknown[];
@@ -99,6 +103,8 @@ export async function POST(request: NextRequest) {
       projects: 0,
       phases: 0,
       tasks: 0,
+      subtasks: 0,
+      comments: 0,
       notes: 0,
       transactions: 0,
       categories: 0,
@@ -106,8 +112,10 @@ export async function POST(request: NextRequest) {
       taxConfig: 0,
       taxPayments: 0,
       recurringExpenses: 0,
+      recurringIncome: 0,
       distributions: 0,
       notifications: 0,
+      reminders: 0,
       projectTemplates: 0,
       auditLogs: 0,
       calendarEvents: 0,
@@ -122,12 +130,15 @@ export async function POST(request: NextRequest) {
         await tx.projectTemplate.deleteMany();
         await tx.reminder.deleteMany();
         await tx.notification.deleteMany();
+        await tx.comment.deleteMany();
+        await tx.subtask.deleteMany();
         await tx.note.deleteMany();
         await tx.task.deleteMany();
         await tx.phase.deleteMany();
         await tx.budget.deleteMany();
         await tx.distribution.deleteMany();
         await tx.recurringExpense.deleteMany();
+        await tx.recurringIncome.deleteMany();
         await tx.taxPayment.deleteMany();
         await tx.taxConfig.deleteMany();
         await tx.transaction.deleteMany();
@@ -438,12 +449,87 @@ export async function POST(request: NextRequest) {
                 endDate: toDate(ce.endDate),
                 allDay: ce.allDay ?? false,
                 color: ce.color ?? "#E8501A",
+                recurrence: ce.recurrence ?? null,
                 projectId: ce.projectId ?? null,
                 createdAt: requireDateField(ce.createdAt),
                 updatedAt: requireDateField(ce.updatedAt),
               },
             });
             imported.calendarEvents++;
+          }
+        }
+
+        // Recurring Income
+        if (Array.isArray(data.recurringIncome)) {
+          for (const ri of data.recurringIncome as any[]) {
+            await tx.recurringIncome.create({
+              data: {
+                id: ri.id,
+                source: ri.source,
+                category: ri.category,
+                amount: ri.amount,
+                frequency: ri.frequency ?? "monthly",
+                nextDueDate: toDate(ri.nextDueDate),
+                active: ri.active ?? true,
+                notes: ri.notes ?? null,
+                createdAt: requireDateField(ri.createdAt),
+                updatedAt: requireDateField(ri.updatedAt),
+              },
+            });
+            imported.recurringIncome++;
+          }
+        }
+
+        // Subtasks (depends on Task)
+        if (Array.isArray(data.subtasks)) {
+          for (const s of data.subtasks as any[]) {
+            await tx.subtask.create({
+              data: {
+                id: s.id,
+                title: s.title,
+                completed: s.completed ?? false,
+                order: s.order ?? 0,
+                taskId: s.taskId,
+                createdAt: requireDateField(s.createdAt),
+              },
+            });
+            imported.subtasks++;
+          }
+        }
+
+        // Comments (depends on Task)
+        if (Array.isArray(data.comments)) {
+          for (const c of data.comments as any[]) {
+            await tx.comment.create({
+              data: {
+                id: c.id,
+                content: c.content,
+                author: c.author ?? "Brett",
+                taskId: c.taskId,
+                createdAt: requireDateField(c.createdAt),
+              },
+            });
+            imported.comments++;
+          }
+        }
+
+        // Reminders
+        if (Array.isArray(data.reminders)) {
+          for (const r of data.reminders as any[]) {
+            await tx.reminder.create({
+              data: {
+                id: r.id,
+                title: r.title,
+                message: r.message ?? "",
+                remindAt: requireDateField(r.remindAt),
+                entityType: r.entityType ?? null,
+                entityId: r.entityId ?? null,
+                link: r.link ?? null,
+                fired: r.fired ?? false,
+                createdAt: requireDateField(r.createdAt),
+              },
+            });
+            imported.reminders++;
           }
         }
       });
@@ -623,10 +709,58 @@ export async function POST(request: NextRequest) {
         for (const ce of data.calendarEvents as any[]) {
           await prisma.calendarEvent.upsert({
             where: { id: ce.id },
-            create: { id: ce.id, title: ce.title, description: ce.description ?? null, type: ce.type ?? "other", date: requireDateField(ce.date), endDate: toDate(ce.endDate), allDay: ce.allDay ?? false, color: ce.color ?? "#E8501A", projectId: ce.projectId ?? null, createdAt: requireDateField(ce.createdAt), updatedAt: requireDateField(ce.updatedAt) },
+            create: { id: ce.id, title: ce.title, description: ce.description ?? null, type: ce.type ?? "other", date: requireDateField(ce.date), endDate: toDate(ce.endDate), allDay: ce.allDay ?? false, color: ce.color ?? "#E8501A", recurrence: ce.recurrence ?? null, projectId: ce.projectId ?? null, createdAt: requireDateField(ce.createdAt), updatedAt: requireDateField(ce.updatedAt) },
             update: {},
           });
           imported.calendarEvents++;
+        }
+      }
+
+      // Recurring Income
+      if (Array.isArray(data.recurringIncome)) {
+        for (const ri of data.recurringIncome as any[]) {
+          await prisma.recurringIncome.upsert({
+            where: { id: ri.id },
+            create: { id: ri.id, source: ri.source, category: ri.category, amount: ri.amount, frequency: ri.frequency ?? "monthly", nextDueDate: toDate(ri.nextDueDate), active: ri.active ?? true, notes: ri.notes ?? null, createdAt: requireDateField(ri.createdAt), updatedAt: requireDateField(ri.updatedAt) },
+            update: {},
+          });
+          imported.recurringIncome++;
+        }
+      }
+
+      // Subtasks (depends on Task)
+      if (Array.isArray(data.subtasks)) {
+        for (const s of data.subtasks as any[]) {
+          await prisma.subtask.upsert({
+            where: { id: s.id },
+            create: { id: s.id, title: s.title, completed: s.completed ?? false, order: s.order ?? 0, taskId: s.taskId, createdAt: requireDateField(s.createdAt) },
+            update: {},
+          });
+          imported.subtasks++;
+        }
+      }
+
+      // Comments (depends on Task)
+      if (Array.isArray(data.comments)) {
+        for (const c of data.comments as any[]) {
+          await prisma.comment.upsert({
+            where: { id: c.id },
+            create: { id: c.id, content: c.content, author: c.author ?? "Brett", taskId: c.taskId, createdAt: requireDateField(c.createdAt) },
+            update: {},
+          });
+          imported.comments++;
+        }
+      }
+
+      // Reminders
+      if (Array.isArray(data.reminders)) {
+        for (const r of data.reminders as any[]) {
+          await prisma.reminder.upsert({
+            where: { id: r.id },
+            create: { id: r.id, title: r.title, message: r.message ?? "", remindAt: requireDateField(r.remindAt), entityType: r.entityType ?? null, entityId: r.entityId ?? null, link: r.link ?? null, fired: r.fired ?? false, createdAt: requireDateField(r.createdAt) },
+            update: {},
+          });
+          imported.reminders++;
         }
       }
     }

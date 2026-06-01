@@ -78,7 +78,19 @@ export async function GET(
     });
 
     if (!tx || !tx.receiptData) {
-      return NextResponse.json({ error: "No receipt found" }, { status: 404 });
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>No Receipt</title>
+<style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#09090B;color:#A1A1AA}
+.box{text-align:center;padding:2rem;border:1px solid #27272A;border-radius:12px;max-width:400px}
+h2{color:#FAFAFA;margin-bottom:.5rem}p{margin:.5rem 0;font-size:.875rem}</style></head>
+<body><div class="box"><h2>No Receipt File</h2>
+<p>No receipt file has been uploaded for this transaction.</p>
+<p>The transaction was marked as &ldquo;receipt saved&rdquo; but no file was attached.</p>
+<p style="margin-top:1.5rem"><a href="javascript:window.close()" style="color:#E8501A">Close this tab</a></p>
+</div></body></html>`;
+      return new Response(html, {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
     }
 
     const buffer = Buffer.from(tx.receiptData, "base64");

@@ -65,8 +65,9 @@ async function getFinanceData() {
   for (const c of categories) { categoryColorMap[c.name] = c.color; }
 
   return {
-    transactions: transactions.map((t) => ({
+    transactions: transactions.map(({ receiptData, ...t }) => ({
       ...t,
+      hasReceiptFile: receiptData !== null,
       date: t.date.toISOString(),
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),

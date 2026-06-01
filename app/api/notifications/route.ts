@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // ── Input validation ────────────────────────────────────────────────
     const type = validateEnum(
       body.type,
-      ["deadline", "overdue", "burn_rate", "milestone", "auto_transaction"],
+      ["deadline", "overdue", "burn_rate", "milestone", "auto_transaction", "reminder"],
       "type"
     );
     const title = maxLength(requireString(body.title, "title"), 200, "title");

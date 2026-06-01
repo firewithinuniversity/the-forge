@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const name = maxLength(requireString(body.name, "name"), 100, "name");
-    const type = validateEnum(body.type, ["income", "expense"], "type");
+    const type = validateEnum(body.type, ["income", "expense", "both"], "type");
     const icon = optionalString(body.icon, "icon");
     if (icon !== undefined) maxLength(icon, 50, "icon");
 
