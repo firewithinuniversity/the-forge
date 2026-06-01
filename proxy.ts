@@ -39,7 +39,8 @@ export function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
-    pathname.startsWith("/api/auth/")
+    pathname.startsWith("/api/auth/") ||
+    pathname === "/api/finance/live-feed"
   ) {
     return NextResponse.next();
   }
