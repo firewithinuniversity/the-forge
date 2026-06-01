@@ -15,7 +15,7 @@ async function getDashboardData() {
   const startOfPrevMonth = new Date(year, now.getMonth() - 1, 1);
   const endOfPrevMonth = new Date(year, now.getMonth(), 0, 23, 59, 59, 999);
 
-  const [projects, recentTasks, monthlyTx, prevMonthTx, yearTx, yearAllTx, recentTransactions, recentDistributions, overdueTasks, last6MonthsTx] = await Promise.all([
+  const [projects, recentTasks, monthlyTx, prevMonthTx, yearAllTx, recentTransactions, recentDistributions, overdueTasks, last6MonthsTx] = await Promise.all([
     prisma.project.findMany({
       where: { archived: false },
       orderBy: { updatedAt: "desc" },
@@ -39,12 +39,8 @@ async function getDashboardData() {
       select: { type: true, amount: true },
     }),
     prisma.transaction.findMany({
-      where: { date: { gte: startOfYear }, type: "income", category: { contains: "Donation" } },
-      select: { amount: true },
-    }),
-    prisma.transaction.findMany({
       where: { date: { gte: startOfYear } },
-      select: { type: true, amount: true },
+      select: { type: true, amount: true, category: true },
     }),
     prisma.transaction.findMany({
       orderBy: { createdAt: "desc" },
@@ -60,7 +56,7 @@ async function getDashboardData() {
     prisma.task.findMany({
       where: {
         dueDate: { lt: now },
-        status: { not: "done" },
+        status: { notIn: ["done"] },
       },
       orderBy: { dueDate: "asc" },
       take: 5,
@@ -72,6 +68,9 @@ async function getDashboardData() {
       select: { type: true, amount: true, date: true },
     }),
   ]);
+
+  // Filter donations in JS instead of using Prisma contains (LibSQL compatibility)
+  const yearTx = yearAllTx.filter(t => t.type === "income" && (t.category ?? "").includes("Donation"));
 
   const allTasks = projects.flatMap((p) => p.tasks);
   const endOfWeek = new Date(now);
@@ -256,7 +255,20 @@ function timeAgo(iso: string) {
 }
 
 export default async function Home() {
-  const data = await getDashboardData();
+  let data;
+  try {
+    data = await getDashboardData();
+  } catch (err) {
+    console.error("Dashboard data fetch failed:", err);
+    // Return a minimal dashboard instead of crashing
+    data = {
+      totalProjects: 0, dueThisWeek: 0, monthlyIncome: 0, monthlyExpenses: 0,
+      prevMonthIncome: 0, prevMonthExpenses: 0, incomeChange: 0, expenseChange: 0,
+      profitMargin: 0, ytdProfitMargin: 0, ytdIncome: 0,
+      donationCount: 0, avgDonation: 0, daysUntilDeadline: 99, nextDeadlineName: "Unknown",
+      projectCards: [], activity: [], upcomingDeadlines: [], overdueItems: [], cashFlowMonths: [],
+    };
+  }
   const deadlineColor = data.daysUntilDeadline < 15 ? "text-red-400" : data.daysUntilDeadline <= 30 ? "text-amber-400" : "text-green-400";
 
   return (
