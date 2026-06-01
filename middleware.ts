@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createHmac } from "node:crypto";
 
-function makeToken(password: string): string {
-  return createHmac("sha256", "forge-auth-secret")
-    .update(password)
-    .digest("hex");
+export const runtime = "experimental-edge";
+
+// Web Crypto API HMAC-SHA256 (Edge-compatible, no node:crypto needed)
+async function makeToken(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode("forge-auth-secret"),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(password));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-/* ── Known bot User-Agent patterns ── */
+// Known bot User-Agent patterns
 const BOT_PATTERNS = [
   /bot/i, /crawl/i, /spider/i, /scrape/i, /scan/i,
   /curl/i, /wget/i, /python-requests/i, /httpx/i,
@@ -16,14 +27,14 @@ const BOT_PATTERNS = [
 ];
 
 function isBot(ua: string | null): boolean {
-  if (!ua) return true; // No user-agent = suspicious
+  if (!ua) return true;
   return BOT_PATTERNS.some((p) => p.test(ua));
 }
 
-export function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow robots.txt through (so bots read the "Disallow: /" rule)
+  // Allow robots.txt through
   if (pathname === "/robots.txt") {
     return NextResponse.next();
   }
@@ -34,7 +45,7 @@ export function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // Skip auth for login page, static assets, and auth API routes
+  // Skip auth for login page, static assets, auth API, and live feed
   if (
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
@@ -47,48 +58,29 @@ export function proxy(request: NextRequest) {
 
   const cookie = request.cookies.get("forge-auth");
   const password = process.env.FORGE_PASSWORD ?? "forge2024";
-  const expectedToken = makeToken(password);
+  const expectedToken = await makeToken(password);
 
   const isAuthenticated = cookie?.value === expectedToken;
 
   if (!isAuthenticated) {
-    // API routes get a 401 JSON response
     if (pathname.startsWith("/api/")) {
-      return Response.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // Page routes get redirected to /login
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Add security headers to all authenticated responses
+  // Security headers on all authenticated responses
   const response = NextResponse.next();
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  response.headers.set(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()"
-  );
-  response.headers.set(
-    "Content-Security-Policy",
-    "frame-ancestors 'none'"
-  );
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("Content-Security-Policy", "frame-ancestors 'none'");
   return response;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

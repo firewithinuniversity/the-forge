@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
-import { createHmac } from "node:crypto";
 
-function makeToken(password: string): string {
-  return createHmac("sha256", "forge-auth-secret")
-    .update(password)
-    .digest("hex");
+// Web Crypto HMAC-SHA256 (Edge-compatible, matches proxy.ts)
+async function makeToken(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode("forge-auth-secret"),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(password));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-/* ── Rate limiter: 5 attempts per IP per 60-second window ── */
+// Rate limiter: 5 attempts per IP per 60-second window
 const attempts = new Map<string, { count: number; resetAt: number }>();
-const WINDOW_MS = 60_000; // 1 minute
+const WINDOW_MS = 60_000;
 const MAX_ATTEMPTS = 5;
 
 function isRateLimited(ip: string): boolean {
@@ -24,14 +33,6 @@ function isRateLimited(ip: string): boolean {
   entry.count++;
   return entry.count > MAX_ATTEMPTS;
 }
-
-// Cleanup stale entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of attempts) {
-    if (now > entry.resetAt) attempts.delete(ip);
-  }
-}, 5 * 60_000);
 
 export async function POST(request: Request) {
   try {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Wrong password" }, { status: 401 });
     }
 
-    const token = makeToken(password);
+    const token = await makeToken(password);
 
     const response = NextResponse.json({ success: true });
     response.cookies.set("forge-auth", token, {
