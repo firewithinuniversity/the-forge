@@ -12,7 +12,7 @@ function raw$(n: number): string {
   return Math.round(n * 100) / 100 + "";
 }
 function fmtDate(d: Date): string {
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+  return `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(d.getUTCDate()).padStart(2, "0")}/${d.getUTCFullYear()}`;
 }
 function esc(val: string | number | null | undefined): string {
   if (val === null || val === undefined) return "";
@@ -96,7 +96,7 @@ function generateMonthly(
   const { transactions, config } = data;
   const monthTx = transactions.filter(t => {
     const d = new Date(t.date);
-    return d.getMonth() === month && d.getFullYear() === year;
+    return d.getUTCMonth() === month && d.getUTCFullYear() === year;
   });
 
   const income = monthTx.filter(t => t.type === "income");
@@ -161,7 +161,7 @@ function generateQuarterly(
 
   const qTx = transactions.filter(t => {
     const d = new Date(t.date);
-    return d.getMonth() >= startMonth && d.getMonth() <= endMonth && d.getFullYear() === year;
+    return d.getUTCMonth() >= startMonth && d.getUTCMonth() <= endMonth && d.getUTCFullYear() === year;
   });
 
   const totalIncome = qTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
@@ -206,7 +206,7 @@ function generateQuarterly(
   lines.push("MONTHLY BREAKDOWN");
   lines.push(csvRow("Month", "Income", "Expenses", "Net"));
   for (let m = startMonth; m <= endMonth; m++) {
-    const mTx = qTx.filter(t => new Date(t.date).getMonth() === m);
+    const mTx = qTx.filter(t => new Date(t.date).getUTCMonth() === m);
     const mInc = mTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
     const mExp = mTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
     lines.push(csvRow(MONTHS[m], fmt$(mInc), fmt$(mExp), fmt$(mInc - mExp)));
@@ -267,13 +267,13 @@ function generateAnnual(
   for (const cat of incomeCategories) {
     const monthVals = MONTHS.map((_, m) => {
       return transactions
-        .filter(t => t.type === "income" && t.category === cat && new Date(t.date).getMonth() === m)
+        .filter(t => t.type === "income" && t.category === cat && new Date(t.date).getUTCMonth() === m)
         .reduce((s, t) => s + t.amount, 0);
     });
     lines.push(csvRow(cat, ...monthVals.map(v => fmt$(v)), fmt$(monthVals.reduce((a, b) => a + b, 0))));
   }
   const monthlyIncTotals = MONTHS.map((_, m) =>
-    transactions.filter(t => t.type === "income" && new Date(t.date).getMonth() === m).reduce((s, t) => s + t.amount, 0)
+    transactions.filter(t => t.type === "income" && new Date(t.date).getUTCMonth() === m).reduce((s, t) => s + t.amount, 0)
   );
   lines.push(csvRow("TOTAL", ...monthlyIncTotals.map(v => fmt$(v)), fmt$(totalIncome)));
   lines.push("");
@@ -285,13 +285,13 @@ function generateAnnual(
   for (const cat of expenseCategories) {
     const monthVals = MONTHS.map((_, m) => {
       return transactions
-        .filter(t => t.type === "expense" && t.category === cat && new Date(t.date).getMonth() === m)
+        .filter(t => t.type === "expense" && t.category === cat && new Date(t.date).getUTCMonth() === m)
         .reduce((s, t) => s + t.amount, 0);
     });
     lines.push(csvRow(cat, ...monthVals.map(v => fmt$(v)), fmt$(monthVals.reduce((a, b) => a + b, 0))));
   }
   const monthlyExpTotals = MONTHS.map((_, m) =>
-    transactions.filter(t => t.type === "expense" && new Date(t.date).getMonth() === m).reduce((s, t) => s + t.amount, 0)
+    transactions.filter(t => t.type === "expense" && new Date(t.date).getUTCMonth() === m).reduce((s, t) => s + t.amount, 0)
   );
   lines.push(csvRow("TOTAL", ...monthlyExpTotals.map(v => fmt$(v)), fmt$(totalExpenses)));
   lines.push("");
@@ -304,7 +304,7 @@ function generateAnnual(
   for (let q = 1; q <= 4; q++) {
     const sm = (q - 1) * 3;
     const qTx = transactions.filter(t => {
-      const m = new Date(t.date).getMonth();
+      const m = new Date(t.date).getUTCMonth();
       return m >= sm && m < sm + 3;
     });
     const qInc = qTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);

@@ -201,7 +201,7 @@ export default function NotesClient({ notes, projects, transactions = [] }: { no
                         <option value="">No linked transaction</option>
                         {transactions.map((t) => (
                           <option key={t.id} value={t.id}>
-                            {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} — {t.type === "income" ? "+" : "-"}{fmtCurrency(t.amount)} — {t.description}
+                            {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} — {t.type === "income" ? "+" : "-"}{fmtCurrency(t.amount)} — {t.description}
                           </option>
                         ))}
                       </select>
@@ -302,7 +302,7 @@ export default function NotesClient({ notes, projects, transactions = [] }: { no
                 <option value="">No linked transaction</option>
                 {transactions.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} — {t.type === "income" ? "+" : "-"}{fmtCurrency(t.amount)} — {t.description}
+                    {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} — {t.type === "income" ? "+" : "-"}{fmtCurrency(t.amount)} — {t.description}
                   </option>
                 ))}
               </select>

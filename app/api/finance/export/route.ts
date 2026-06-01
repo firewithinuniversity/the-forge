@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 
     // ─── Sheet 1: All Transactions ─────────────────────────────────
     const txRows = transactions.map((t) => ({
-      Date: new Date(t.date).toLocaleDateString("en-US"),
+      Date: new Date(t.date).toLocaleDateString("en-US", { timeZone: "UTC" }),
       Type: t.type === "income" ? "Income" : "Expense",
       Description: t.description,
       Category: t.category,
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
 
     // ─── Sheet 4: Monthly Summary ──────────────────────────────────
     const monthlyData = MONTHS.map((name, i) => {
-      const monthTx = transactions.filter((t) => new Date(t.date).getMonth() === i);
+      const monthTx = transactions.filter((t) => new Date(t.date).getUTCMonth() === i);
       const inc = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
       const exp = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
       const net = inc - exp;
@@ -175,7 +175,7 @@ export async function GET(request: Request) {
       // ─── Sheet 7: Distributions ────────────────────────────────────
       if (distributions.length > 0) {
         const distRows = distributions.map((d) => ({
-          Date: new Date(d.date).toLocaleDateString("en-US"),
+          Date: new Date(d.date).toLocaleDateString("en-US", { timeZone: "UTC" }),
           Type: d.type,
           "LLC Net Profit": fmt$(d.llcNetProfit),
           [config.partner1Name ?? "Partner 1"]: fmt$(d.partner1Share),
@@ -221,9 +221,9 @@ export async function GET(request: Request) {
           Quarter: `Q${tp.quarter}`,
           Type: tp.type.replace("_", " "),
           Amount: fmt$(tp.amount),
-          "Due Date": new Date(tp.dueDate).toLocaleDateString("en-US"),
+          "Due Date": new Date(tp.dueDate).toLocaleDateString("en-US", { timeZone: "UTC" }),
           Paid: tp.paid ? "Yes" : "No",
-          "Paid Date": tp.paidDate ? new Date(tp.paidDate).toLocaleDateString("en-US") : "",
+          "Paid Date": tp.paidDate ? new Date(tp.paidDate).toLocaleDateString("en-US", { timeZone: "UTC" }) : "",
           Notes: tp.notes || "",
         }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tpRows), "Tax Payments");

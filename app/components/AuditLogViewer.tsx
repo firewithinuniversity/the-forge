@@ -57,7 +57,7 @@ function formatValue(val: unknown): string {
   if (typeof val === "string") {
     // Check if it looks like an ISO date
     if (/^\d{4}-\d{2}-\d{2}T/.test(val)) {
-      return new Date(val).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      return new Date(val).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
     }
     return val;
   }

@@ -355,7 +355,7 @@ export default function DistributionsClient({ distributions, partner1Name, partn
 
                 return (
                   <tr key={d.id} className="border-b border-[#27272A]/50 hover:bg-[#1A1A1E]/50 transition-colors">
-                    <td className="py-3 px-4 text-[#FAFAFA]">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                    <td className="py-3 px-4 text-[#FAFAFA]">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}</td>
                     <td className="py-3 px-4 text-[#A1A1AA] capitalize">{d.type.replace(/_/g, " ")}</td>
                     <td className="py-3 px-4 text-right text-[#FAFAFA]">{fmt(d.llcNetProfit)}</td>
                     <td className="py-3 px-4 text-right text-green-400">{fmt(d.partner1Share)}</td>

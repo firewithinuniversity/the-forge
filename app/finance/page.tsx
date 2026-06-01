@@ -43,7 +43,7 @@ async function getFinanceData() {
     let inc = 0, exp = 0;
     for (const t of chartTx) {
       const td = new Date(t.date);
-      const tk = `${td.getFullYear()}-${String(td.getMonth() + 1).padStart(2, "0")}`;
+      const tk = `${td.getUTCFullYear()}-${String(td.getUTCMonth() + 1).padStart(2, "0")}`;
       if (tk === key) { if (t.type === "income") inc += t.amount; else exp += t.amount; }
     }
     monthlyChart.push({ month: label, income: roundCents(inc), expenses: roundCents(exp) });

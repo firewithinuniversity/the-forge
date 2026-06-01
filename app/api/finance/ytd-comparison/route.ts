@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const buckets: Record<string, { income: number; expenses: number }> = {};
     for (const t of transactions) {
       const d = new Date(t.date);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
       if (!buckets[key]) buckets[key] = { income: 0, expenses: 0 };
       if (t.type === "income") buckets[key].income += t.amount;
       else buckets[key].expenses += t.amount;

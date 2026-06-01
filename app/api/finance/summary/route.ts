@@ -50,7 +50,7 @@ export async function GET() {
       let income = 0, expenses = 0;
       for (const t of last12Months) {
         const td = new Date(t.date);
-        const tk = `${td.getFullYear()}-${String(td.getMonth() + 1).padStart(2, "0")}`;
+        const tk = `${td.getUTCFullYear()}-${String(td.getUTCMonth() + 1).padStart(2, "0")}`;
         if (tk === key) {
           if (t.type === "income") income += t.amount;
           else expenses += t.amount;

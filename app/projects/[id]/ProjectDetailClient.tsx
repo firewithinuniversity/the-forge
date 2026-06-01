@@ -515,7 +515,7 @@ function TaskListView({ tasks, activePhaseId }: { tasks: TaskData[]; activePhase
           </div>
           <div className="w-24">
             <span className="text-xs text-[#52525B]">
-              {task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+              {task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "—"}
             </span>
           </div>
         </div>

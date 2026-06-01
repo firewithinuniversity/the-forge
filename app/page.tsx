@@ -396,7 +396,7 @@ export default async function Home() {
                     <div>
                       <p className="text-xs text-[#FAFAFA]">{dl.name}</p>
                       <p className="text-[10px] text-[#52525B]">
-                        {new Date(dl.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {new Date(dl.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
                       </p>
                     </div>
                     <span className={`text-sm font-bold tabular-nums ${dlColor}`}>{dl.daysAway}d</span>

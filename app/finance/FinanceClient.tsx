@@ -363,7 +363,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
                             className="rounded border-[#27272A] bg-[#09090B] text-[#E8501A] focus:ring-[#E8501A]/30" />
                         </td>
                         <td className="py-3 px-3 text-xs text-[#A1A1AA] whitespace-nowrap cursor-pointer hover:text-[#FAFAFA] transition-colors" onClick={() => setEditingTransaction(t)}>
-                          {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
                         </td>
                         <td className="py-3 px-3 cursor-pointer" onClick={() => setEditingTransaction(t)}>
                           <p className="text-sm text-[#FAFAFA] truncate max-w-[250px]">{t.description}</p>
@@ -734,7 +734,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
             <ul className="ml-6 mb-3 space-y-1 text-xs text-amber-300/80">
               {duplicateWarning.map((d) => (
                 <li key={d.id}>
-                  {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} &mdash; {d.description}
+                  {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })} &mdash; {d.description}
                 </li>
               ))}
             </ul>

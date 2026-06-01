@@ -22,7 +22,7 @@ import { prisma } from "@/lib/prisma";
  */
 
 function fmtDate(d: Date): string {
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+  return `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(d.getUTCDate()).padStart(2, "0")}/${d.getUTCFullYear()}`;
 }
 
 function esc(val: string | number | null | undefined): string {
@@ -108,7 +108,7 @@ export async function GET(request: Request) {
         });
 
         const monthlyData = MONTHS.map((name, i) => {
-          const monthTx = transactions.filter(t => new Date(t.date).getMonth() === i);
+          const monthTx = transactions.filter(t => new Date(t.date).getUTCMonth() === i);
           const inc = monthTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
           const exp = monthTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
           return { month: name, income: Math.round(inc * 100) / 100, expenses: Math.round(exp * 100) / 100, net: Math.round((inc - exp) * 100) / 100 };

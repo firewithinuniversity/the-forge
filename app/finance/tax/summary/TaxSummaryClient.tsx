@@ -369,7 +369,7 @@ export default function TaxSummaryClient({ initialData }: Props) {
                     <td className="py-3 px-3 text-[#A1A1AA]">{TYPE_LABELS[p.type] || p.type}</td>
                     <td className="py-3 px-3 text-right text-[#FAFAFA]">{fmt(p.amount)}</td>
                     <td className="py-3 px-3 text-[#A1A1AA]">
-                      {new Date(p.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {new Date(p.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
                     </td>
                     <td className="py-3 px-3 text-center">
                       <Badge variant={p.paid ? "success" : "warning"}>

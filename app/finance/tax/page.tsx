@@ -38,7 +38,7 @@ async function getTaxData() {
   const quarterlyIncome = [0, 0, 0, 0];
   const quarterlyExpenses = [0, 0, 0, 0];
   for (const t of transactions) {
-    const q = Math.floor(new Date(t.date).getMonth() / 3);
+    const q = Math.floor(new Date(t.date).getUTCMonth() / 3);
     if (t.type === "income") quarterlyIncome[q] += t.amount;
     else quarterlyExpenses[q] += t.amount;
   }

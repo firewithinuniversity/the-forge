@@ -28,7 +28,7 @@ function getDueDateStyle(dateStr: string | null): { text: string; className: str
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   if (diffDays < 0) return { text: `${formatted} (overdue)`, className: "text-red-400" };
   if (diffDays <= 7) return { text: `${formatted} (${diffDays}d)`, className: "text-amber-400" };
   return { text: formatted, className: "text-green-400" };

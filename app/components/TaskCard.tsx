@@ -46,7 +46,7 @@ function formatDueDate(dateStr: string): { text: string; className: string } {
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   if (diffDays < 0) return { text: formatted, className: "text-red-400" };
   if (diffDays <= 2) return { text: formatted, className: "text-amber-400" };
