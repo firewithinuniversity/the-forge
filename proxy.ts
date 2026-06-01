@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export const runtime = "experimental-edge";
-
-// Web Crypto API HMAC-SHA256 (Edge-compatible, no node:crypto needed)
+// HMAC-SHA256 via Web Crypto API (works on both Edge and Node.js)
 async function makeToken(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -31,7 +29,7 @@ function isBot(ua: string | null): boolean {
   return BOT_PATTERNS.some((p) => p.test(ua));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow robots.txt through
