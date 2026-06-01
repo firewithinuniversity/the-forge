@@ -13,6 +13,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "The Forge — Project Command Center",
   description: "Project management and finance tracking for Fire Within University.",
+  manifest: "/manifest.json",
+  themeColor: "#E8501A",
+  appleWebApp: {
+    capable: true,
+    title: "The Forge",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({
