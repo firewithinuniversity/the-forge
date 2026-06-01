@@ -41,6 +41,12 @@ async function getTimelineData() {
 }
 
 export default async function TimelinePage() {
-  const projects = await getTimelineData();
+  let projects: Awaited<ReturnType<typeof getTimelineData>>;
+  try {
+    projects = await getTimelineData();
+  } catch (err) {
+    console.error("Timeline page error:", err);
+    projects = [];
+  }
   return <TimelineClient projects={projects} />;
 }

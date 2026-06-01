@@ -10,72 +10,70 @@ export async function GET(request: Request) {
       return NextResponse.json({ results: [] });
     }
 
-    // Search across all major entities in parallel
-    const [projects, tasks, transactions, notes] = await Promise.all([
-      prisma.project.findMany({
-        where: {
-          OR: [
-            { name: { contains: q } },
-            { description: { contains: q } },
-          ],
-          archived: false,
-        },
-        select: { id: true, name: true, description: true, color: true },
-        take: 5,
-      }),
-      prisma.task.findMany({
-        where: {
-          OR: [
-            { title: { contains: q } },
-            { description: { contains: q } },
-          ],
-        },
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          priority: true,
-          projectId: true,
-          project: { select: { name: true, color: true } },
-        },
-        take: 5,
-      }),
-      prisma.transaction.findMany({
-        where: {
-          OR: [
-            { description: { contains: q } },
-            { category: { contains: q } },
-            { notes: { contains: q } },
-          ],
-        },
-        select: {
-          id: true,
-          type: true,
-          amount: true,
-          description: true,
-          category: true,
-          date: true,
-        },
-        orderBy: { date: "desc" },
-        take: 5,
-      }),
-      prisma.note.findMany({
-        where: {
-          OR: [
-            { title: { contains: q } },
-            { content: { contains: q } },
-          ],
-        },
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          updatedAt: true,
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 5,
-      }),
-    ]);
+    // Fetch broader sets and filter in JS (LibSQL/Turso doesn't support `contains`)
+    const match = (value: string | null | undefined) =>
+      !!value && value.toLowerCase().includes(q.toLowerCase());
+
+    const [allProjects, allTasks, allTransactions, allNotes] =
+      await Promise.all([
+        prisma.project.findMany({
+          where: { archived: false },
+          select: { id: true, name: true, description: true, color: true },
+          take: 50,
+        }),
+        prisma.task.findMany({
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            priority: true,
+            projectId: true,
+            project: { select: { name: true, color: true } },
+          },
+          take: 50,
+        }),
+        prisma.transaction.findMany({
+          select: {
+            id: true,
+            type: true,
+            amount: true,
+            description: true,
+            category: true,
+            notes: true,
+            date: true,
+          },
+          orderBy: { date: "desc" },
+          take: 50,
+        }),
+        prisma.note.findMany({
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            category: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 50,
+        }),
+      ]);
+
+    const projects = allProjects
+      .filter((p) => match(p.name) || match(p.description))
+      .slice(0, 5);
+
+    const tasks = allTasks
+      .filter((t) => match(t.title) || match(t.description))
+      .slice(0, 5);
+
+    const transactions = allTransactions
+      .filter((tx) => match(tx.description) || match(tx.category) || match(tx.notes))
+      .slice(0, 5);
+
+    const notes = allNotes
+      .filter((n) => match(n.title) || match(n.content))
+      .slice(0, 5);
 
     type ResultItem = {
       type: "project" | "task" | "transaction" | "note";

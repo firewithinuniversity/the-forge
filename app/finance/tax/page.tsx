@@ -62,6 +62,35 @@ async function getTaxData() {
 }
 
 export default async function TaxCenterPage() {
-  const data = await getTaxData();
+  let data;
+  try {
+    data = await getTaxData();
+  } catch (err) {
+    console.error("Tax center page error:", err);
+    data = {
+      config: {
+        id: "",
+        federalTaxRate: 0.12,
+        selfEmploymentRate: 0.153,
+        seDeduction: 0.5,
+        stateTaxRate: 0.0465,
+        stateName: "Wisconsin",
+        ownershipSplit: 0.5,
+        qbiDeductionRate: 0.2,
+        taxReserveRate: 0.3,
+        partner1Name: "Brett Breunig",
+        partner2Name: "Jude Begay",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      year: new Date().getFullYear(),
+      totalIncome: 0,
+      totalExpenses: 0,
+      quarterlyIncome: [0, 0, 0, 0],
+      quarterlyExpenses: [0, 0, 0, 0],
+      taxPayments: [],
+      totalDistributed: 0,
+    };
+  }
   return <TaxCenterClient {...data} />;
 }

@@ -75,10 +75,12 @@ export async function PATCH(request: Request) {
 
     const data = action === "read" ? { read: true } : { dismissed: true };
 
-    await prisma.notification.updateMany({
-      where: { id: { in: ids } },
-      data,
-    });
+    for (const id of ids) {
+      await prisma.notification.update({
+        where: { id },
+        data,
+      });
+    }
 
     return NextResponse.json({ success: true, updated: ids.length });
   } catch (error) {

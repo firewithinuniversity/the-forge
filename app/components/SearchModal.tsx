@@ -53,11 +53,7 @@ export default function SearchModal() {
   const pathname = usePathname();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Hide on login
-  if (pathname === "/login") return null;
-
   // Global keyboard shortcut
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -73,7 +69,6 @@ export default function SearchModal() {
   }, []);
 
   // Focus input when opening
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -84,7 +79,6 @@ export default function SearchModal() {
   }, [open]);
 
   // Debounced search
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const search = useCallback(async (q: string) => {
     if (q.length < 2) {
       setResults([]);
@@ -104,6 +98,9 @@ export default function SearchModal() {
       setLoading(false);
     }
   }, []);
+
+  // Hide on login
+  if (pathname === "/login") return null;
 
   function handleInputChange(value: string) {
     setQuery(value);

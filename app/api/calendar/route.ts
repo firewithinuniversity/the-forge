@@ -173,12 +173,10 @@ export async function getCalendarEvents(month: number, year: number): Promise<Ca
 
   // 7. Generate recurring calendar event instances
   // Fetch all calendar events with recurrence (even outside range — the base may be before the window)
-  const recurringCalendarEvents = await prisma.calendarEvent.findMany({
-    where: {
-      recurrence: { not: null },
-    },
+  const allCalendarEvents = await prisma.calendarEvent.findMany({
     include: { project: { select: { color: true } } },
   });
+  const recurringCalendarEvents = allCalendarEvents.filter(e => e.recurrence !== null);
 
   for (const rce of recurringCalendarEvents) {
     if (!rce.recurrence) continue;

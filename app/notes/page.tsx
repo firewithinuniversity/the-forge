@@ -37,6 +37,12 @@ async function getNotesData() {
 }
 
 export default async function NotesPage() {
-  const data = await getNotesData();
+  let data;
+  try {
+    data = await getNotesData();
+  } catch (err) {
+    console.error("Notes page error:", err);
+    data = { notes: [], projects: [], transactions: [] };
+  }
   return <NotesClient notes={data.notes} projects={data.projects} transactions={data.transactions} />;
 }

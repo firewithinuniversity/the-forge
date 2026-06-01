@@ -88,6 +88,20 @@ async function getFinanceData() {
 }
 
 export default async function FinancePage() {
-  const data = await getFinanceData();
+  let data;
+  try {
+    data = await getFinanceData();
+  } catch (err) {
+    console.error("Finance page error:", err);
+    data = {
+      transactions: [],
+      categories: [],
+      projects: [],
+      summary: { monthlyIncome: 0, monthlyExpenses: 0, monthlyNet: 0, ytdNet: 0 },
+      monthlyChart: [],
+      categoryBreakdown: [],
+      incomeCategoryBreakdown: [],
+    };
+  }
   return <FinanceClient data={data} />;
 }

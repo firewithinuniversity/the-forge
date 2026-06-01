@@ -7,7 +7,14 @@ export default async function CalendarPage() {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-  const events = await getCalendarEvents(month, year);
+
+  let events: Awaited<ReturnType<typeof getCalendarEvents>>;
+  try {
+    events = await getCalendarEvents(month, year);
+  } catch (err) {
+    console.error("Calendar page error:", err);
+    events = [];
+  }
 
   return <CalendarClient initialEvents={events} initialMonth={month} initialYear={year} />;
 }

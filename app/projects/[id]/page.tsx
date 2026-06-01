@@ -60,7 +60,13 @@ async function getProject(id: string) {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
-  const project = await getProject(id);
+  let project;
+  try {
+    project = await getProject(id);
+  } catch (err) {
+    console.error("Project detail page error:", err);
+    notFound();
+  }
   if (!project) notFound();
   return <ProjectDetailClient project={project} />;
 }

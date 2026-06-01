@@ -53,6 +53,24 @@ async function getData() {
 }
 
 export default async function DistributionsPage() {
-  const data = await getData();
+  let data;
+  try {
+    data = await getData();
+  } catch (err) {
+    console.error("Distributions page error:", err);
+    data = {
+      distributions: [],
+      partner1Name: "Brett Breunig",
+      partner2Name: "Jude Begay",
+      ownershipSplit: 0.5,
+      netProfit: 0,
+      taxReserveRate: 0.3,
+      federalTaxRate: 0.12,
+      selfEmploymentRate: 0.153,
+      seDeduction: 0.5,
+      stateTaxRate: 0.0465,
+      qbiDeductionRate: 0.2,
+    };
+  }
   return <DistributionsClient {...data} />;
 }

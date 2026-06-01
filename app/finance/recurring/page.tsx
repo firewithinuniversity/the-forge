@@ -22,6 +22,12 @@ async function getData() {
 }
 
 export default async function RecurringPage() {
-  const data = await getData();
+  let data;
+  try {
+    data = await getData();
+  } catch (err) {
+    console.error("Recurring expenses page error:", err);
+    data = { expenses: [], categories: [] };
+  }
   return <RecurringClient expenses={data.expenses} categories={data.categories} />;
 }

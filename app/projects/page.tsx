@@ -39,6 +39,12 @@ async function getProjects() {
 }
 
 export default async function ProjectsPage() {
-  const projects = await getProjects();
+  let projects: Awaited<ReturnType<typeof getProjects>>;
+  try {
+    projects = await getProjects();
+  } catch (err) {
+    console.error("Projects page error:", err);
+    projects = [];
+  }
   return <ProjectsListClient projects={projects} />;
 }

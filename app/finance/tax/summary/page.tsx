@@ -216,6 +216,32 @@ async function getTaxSummaryData(year: number) {
 
 export default async function TaxSummaryPage() {
   const year = new Date().getFullYear();
-  const data = await getTaxSummaryData(year);
+  let data;
+  try {
+    data = await getTaxSummaryData(year);
+  } catch (err) {
+    console.error("Tax summary page error:", err);
+    const emptyTax = {
+      grossShare: 0, seTax: 0, seDeductionAmt: 0, qbiDeduction: 0,
+      taxableIncome: 0, federalTax: 0, stateTax: 0, totalTax: 0,
+      distributed: 0, remainingOwed: 0,
+    };
+    data = {
+      year,
+      config: {
+        partner1Name: "Brett Breunig", partner2Name: "Jude Begay",
+        ownershipSplit: 0.5, federalTaxRate: 0.12, selfEmploymentRate: 0.153,
+        seDeduction: 0.5, stateTaxRate: 0.0465, stateName: "Wisconsin",
+        qbiDeductionRate: 0.2,
+      },
+      income: { total: 0, byCategory: [] },
+      expenses: { total: 0, totalDeductible: 0, totalNonDeductible: 0, byCategory: [] },
+      netProfit: 0,
+      partner1: { name: "Brett Breunig", ...emptyTax },
+      partner2: { name: "Jude Begay", ...emptyTax },
+      payments: { totalPaid: 0, totalEstimatedLiability: 0, remainingOwed: 0, byType: [], details: [] },
+      distributions: { total: 0, partner1Total: 0, partner2Total: 0, count: 0 },
+    };
+  }
   return <TaxSummaryClient initialData={data} />;
 }

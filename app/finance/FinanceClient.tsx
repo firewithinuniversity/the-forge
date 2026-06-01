@@ -459,6 +459,7 @@ export default function FinanceClient({ data }: { data: FinanceData }) {
 
       {/* Add Transaction Modal */}
       <AddTransactionModal
+        key={addModalType}
         open={showAddModal}
         initialType={addModalType}
         onClose={() => setShowAddModal(false)}
@@ -640,8 +641,7 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateWarning, setDuplicateWarning] = useState<{ id: string; description: string; date: string }[] | null>(null);
 
-  // Reset type when modal opens
-  useEffect(() => { if (open) setType(initialType); }, [open, initialType]);
+  // Type is set via useState(initialType) on mount; key prop forces remount on type change
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === "both");
   const isDonation = category.toLowerCase().includes("donation");

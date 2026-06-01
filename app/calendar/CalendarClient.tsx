@@ -553,6 +553,7 @@ export default function CalendarClient({ initialEvents, initialMonth, initialYea
         {showNewEvent && (
           <div className="w-full lg:w-80 lg:shrink-0">
             <EventForm
+              key={editingEvent?.calendarEventId || 'new'}
               initialDate={selectedDate}
               editingEvent={editingEvent}
               projects={projects}

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Modal from "./ui/Modal";
+import Input from "./ui/Input";
+import Button from "./ui/Button";
 
 interface NewProjectModalProps {
   onClose: () => void;
@@ -65,106 +68,74 @@ export default function NewProjectModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <Modal open onClose={onClose} title="New Project" maxWidth="sm:max-w-md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-slate-700 bg-slate-800 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-700 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-100">New Project</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-[#A1A1AA] mb-1">
+            Project Name <span className="text-red-400">*</span>
+          </label>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Fire Within University"
+            autoFocus
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
-              {error}
-            </div>
-          )}
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-[#A1A1AA] mb-1">
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="w-full rounded-lg border border-[#27272A] bg-[#0F0F11] px-3 py-2 text-sm text-[#FAFAFA] placeholder-[#52525B] focus:border-[#E8501A] focus:outline-none focus:ring-1 focus:ring-[#E8501A]/30 resize-none transition-colors"
+            placeholder="What is this project about?"
+          />
+        </div>
 
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Project Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="e.g. Fire Within University"
-              autoFocus
-            />
+        {/* Color Picker */}
+        <div>
+          <label className="block text-sm font-medium text-[#A1A1AA] mb-2">
+            Color
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {PRESET_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className={`h-8 w-8 rounded-full transition-[transform,box-shadow] duration-150 ${
+                  color === c
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-[#0F0F11] scale-110"
+                    : "[@media(hover:hover)_and_(pointer:fine)]:hover:scale-105"
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
           </div>
+        </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
-              placeholder="What is this project about?"
-            />
-          </div>
-
-          {/* Color Picker */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Color
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {PRESET_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-8 w-8 rounded-full transition-[transform,box-shadow] duration-150 ${
-                    color === c
-                      ? "ring-2 ring-white ring-offset-2 ring-offset-slate-800 scale-110"
-                      : "hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 transition-colors disabled:opacity-50"
-            >
-              {saving ? "Creating..." : "Create Project"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={saving}>
+            {saving ? "Creating..." : "Create Project"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
