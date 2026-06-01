@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -606,12 +607,12 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
         )}
       </button>
 
-      {/* Dropdown menu — fixed position to escape overflow:hidden table wrapper */}
-      {showMenu && (
+      {/* Portal dropdown — rendered at document.body to escape overflow:hidden */}
+      {showMenu && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
-          className="fixed w-36 rounded-lg bg-[#1A1A1E] border border-[#27272A] shadow-xl z-50 py-1 animate-fade-in"
-          style={{ top: menuPos.top, left: menuPos.left }}
+          className="w-36 rounded-lg bg-[#1A1A1E] border border-[#27272A] shadow-xl py-1"
+          style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
           onClick={(e) => e.stopPropagation()}
         >
           {saved && hasFile ? (
@@ -667,7 +668,8 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
               </button>
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
