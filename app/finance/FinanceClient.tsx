@@ -640,8 +640,8 @@ function AddTransactionModal({ open, initialType, onClose, categories, projects,
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateWarning, setDuplicateWarning] = useState<{ id: string; description: string; date: string }[] | null>(null);
 
-  // Reset when modal opens with new type
-  useState(() => { setType(initialType); });
+  // Reset type when modal opens
+  useEffect(() => { if (open) setType(initialType); }, [open, initialType]);
 
   const filteredCategories = categories.filter((c) => c.type === type || c.type === "both");
   const isDonation = category.toLowerCase().includes("donation");
