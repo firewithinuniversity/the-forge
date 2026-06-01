@@ -15,14 +15,16 @@ export async function POST() {
     }
 
     // Create a notification for each due reminder
-    await prisma.notification.createMany({
-      data: dueReminders.map((r) => ({
-        type: "reminder",
-        title: `⏰ ${r.title}`,
-        message: r.message || `Reminder: ${r.title}`,
-        link: r.link,
-      })),
-    });
+    for (const r of dueReminders) {
+      await prisma.notification.create({
+        data: {
+          type: "reminder",
+          title: `Reminder: ${r.title}`,
+          message: r.message || `Reminder: ${r.title}`,
+          link: r.link,
+        },
+      });
+    }
 
     // Mark all as fired
     await prisma.reminder.updateMany({
@@ -36,6 +38,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error("POST /api/reminders/check error:", error);
-    return NextResponse.json({ error: "Failed to check reminders" }, { status: 500 });
+    return NextResponse.json({ fired: 0 });
   }
 }
