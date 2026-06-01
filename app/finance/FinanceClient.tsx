@@ -487,18 +487,27 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Close menu on outside click
+  // Close menu on outside click or scroll
   useEffect(() => {
+    if (!showMenu) return;
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) {
         setShowMenu(false);
       }
     }
-    if (showMenu) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    function handleScroll() { setShowMenu(false); }
+    document.addEventListener("mousedown", handleClick);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [showMenu]);
 
   async function handleUpload(file: File) {
@@ -556,9 +565,14 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
     <div className="relative" ref={menuRef}>
       <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
       <button
+        ref={btnRef}
         onClick={(e) => {
           e.stopPropagation();
           if (saved) {
+            if (!showMenu && btnRef.current) {
+              const rect = btnRef.current.getBoundingClientRect();
+              setMenuPos({ top: rect.bottom + 4, left: rect.right - 144 });
+            }
             setShowMenu(!showMenu);
           } else {
             fileInputRef.current?.click();
@@ -597,10 +611,12 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
         )}
       </button>
 
-      {/* Dropdown menu for saved receipts */}
+      {/* Dropdown menu — fixed position to escape overflow:hidden table wrapper */}
       {showMenu && (
         <div
-          className="absolute right-0 top-full mt-1 w-36 rounded-lg bg-[#1A1A1E] border border-[#27272A] shadow-xl z-20 py-1 animate-fade-in"
+          ref={menuRef}
+          className="fixed w-36 rounded-lg bg-[#1A1A1E] border border-[#27272A] shadow-xl z-50 py-1 animate-fade-in"
+          style={{ top: menuPos.top, left: menuPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           {saved && hasFile ? (
