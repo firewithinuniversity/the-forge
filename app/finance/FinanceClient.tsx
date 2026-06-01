@@ -492,7 +492,7 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Close menu on outside click or scroll
+  // Close menu on outside click
   useEffect(() => {
     if (!showMenu) return;
     function handleClick(e: MouseEvent) {
@@ -501,13 +501,8 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
         setShowMenu(false);
       }
     }
-    function handleScroll() { setShowMenu(false); }
     document.addEventListener("mousedown", handleClick);
-    window.addEventListener("scroll", handleScroll, true);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [showMenu]);
 
   async function handleUpload(file: File) {
@@ -562,7 +557,7 @@ function ReceiptButton({ transactionId, saved, hasFile }: { transactionId: strin
   // saved=false               → grey "Upload" button, click opens file picker directly
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative">
       <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
       <button
         ref={btnRef}
