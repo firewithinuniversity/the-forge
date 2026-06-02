@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow static/public files through (no auth, no bot check)
-  if (pathname === "/robots.txt" || pathname === "/manifest.json" || pathname === "/icon.svg") {
+  if (pathname === "/robots.txt" || pathname === "/manifest.json" || pathname.startsWith("/icon") || pathname === "/favicon.png") {
     return NextResponse.next();
   }
 

@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   description: "Project management and finance tracking for Fire Within University.",
   manifest: "/manifest.json",
   themeColor: "#E8501A",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/icon-512.png",
+  },
   appleWebApp: {
     capable: true,
     title: "The Forge",
