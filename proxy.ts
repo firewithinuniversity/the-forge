@@ -32,8 +32,8 @@ function isBot(ua: string | null): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow robots.txt through
-  if (pathname === "/robots.txt") {
+  // Allow static/public files through (no auth, no bot check)
+  if (pathname === "/robots.txt" || pathname === "/manifest.json" || pathname === "/icon.svg") {
     return NextResponse.next();
   }
 
@@ -43,13 +43,16 @@ export async function proxy(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // Skip auth for login page, static assets, auth API, and live feed
+  // Skip auth for login page, static assets, auth API, live feed, PWA files, and cron
   if (
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
+    pathname === "/manifest.json" ||
+    pathname === "/icon.svg" ||
     pathname.startsWith("/api/auth/") ||
-    pathname === "/api/finance/live-feed"
+    pathname === "/api/finance/live-feed" ||
+    pathname === "/api/cron/daily"
   ) {
     return NextResponse.next();
   }
